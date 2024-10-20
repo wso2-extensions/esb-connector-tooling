@@ -1,0 +1,3 @@
+#set ( $triple_hash = '###' )
+$triple_hash gen_resources
+This folder contains all the resources used to generate the $connectorName connector.

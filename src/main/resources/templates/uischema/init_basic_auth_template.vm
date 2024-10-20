@@ -1,0 +1,76 @@
+{
+    "connectorName" : "$connectorName",
+    "operationName" : "init",
+    "title" : "Init",
+    "help" : "<h1>Init</h1> <b>The init operation.</b>",
+    "elements" : [
+        {
+            "type" : "attributeGroup",
+            "value" : {
+                "groupName" : "General",
+                "elements" : [
+                    {
+                        "type" : "attributeGroup",
+                        "value" : {
+                            "groupName" : "Search",
+                            "elements" : [
+                                {
+                                    "type" : "attribute",
+                                    "value" : {
+                                        "name" : "search",
+                                        "displayName" : "Search",
+                                        "inputType" : "searchBox",
+                                        "defaultValue" : "",
+                                        "required" : "false",
+                                        "helpTip" : "Search for an attribute using the display name"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type" : "attributeGroup",
+                        "value" : {
+                            "groupName" : "Basic",
+                            "elements" : [
+                                {
+                                    "type" : "attribute",
+                                    "value" : {
+                                        "name" : "base",
+                                        "displayName" : "Base URL",
+                                        "inputType" : "stringOrExpression",
+                                        "defaultValue" : "",
+                                        "required" : "true",
+                                        "helpTip" : "The service root URL."
+                                    }
+                                },
+                                {
+                                    "type" : "attribute",
+                                    "value" : {
+                                        "name" : "username",
+                                        "displayName" : "Username",
+                                        "inputType" : "stringOrExpression",
+                                        "defaultValue" : "",
+                                        "required" : "true",
+                                        "helpTip" : "Username."
+                                    }
+                                },
+                                {
+                                    "type" : "attribute",
+                                    "value" : {
+                                        "name" : "password",
+                                        "displayName" : "Password",
+                                        "inputType" : "stringOrExpression",
+                                        "defaultValue" : "",
+                                        "required" : "true",
+                                        "helpTip" : "Password."
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
