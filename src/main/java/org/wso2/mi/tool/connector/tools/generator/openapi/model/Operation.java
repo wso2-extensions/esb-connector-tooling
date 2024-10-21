@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.mi.tool.connector.tools.generator.openapi;
+package org.wso2.mi.tool.connector.tools.generator.openapi.model;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -179,9 +179,10 @@ public class Operation {
     @Override
     public String toString() {
 
-        return "Operation{" + "name='" + name + '\'' + ", displayName='" + displayName + '\'' + ", path='" + path + '\'' + ", description='" +
-                description + '\'' + ", xmlDescription='" + xmlDescription + '\'' + ", documentationLink='" + documentationLink + '\'' +
-                ", pathParameters=" + pathParameters + ", queryParameters=" + queryParameters + ", headerParameters=" + headerParameters +
+        return "Operation{" + "name='" + name + '\'' + ", displayName='" + displayName + '\'' + ", path='" + path +
+                '\'' + ", description='" + description + '\'' + ", xmlDescription='" +
+                xmlDescription + '\'' + ", documentationLink='" + documentationLink + '\'' + ", pathParameters=" +
+                pathParameters + ", queryParameters=" + queryParameters + ", headerParameters=" + headerParameters +
                 ", cookieParameters=" + cookieParameters + ", requestParameters=" + requestParameters +  '}';
     }
 }

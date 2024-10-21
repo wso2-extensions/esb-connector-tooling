@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.mi.tool.connector.tools.generator.openapi;
+package org.wso2.mi.tool.connector.tools.generator.openapi.model;
 
 /**
  * Class to model the parameter of the OpenAPI spec
@@ -134,8 +134,9 @@ public class Parameter {
     @Override
     public String toString() {
 
-        return "Parameter{" + "name='" + name + '\'' + ", required=" + required + ", description='" + description + '\'' + ", defaultValue='" +
-                defaultValue + '\'' + ", parameterName='" + parameterName + '\'' + ", displayName='" + displayName + '\'' + ", xmlDescription='" +
+        return "Parameter{" + "name='" + name + '\'' + ", required=" + required + ", description='" +
+                description + '\'' + ", defaultValue='" + defaultValue + '\'' + ", parameterName='" +
+                parameterName + '\'' + ", displayName='" + displayName + '\'' + ", xmlDescription='" +
                 xmlDescription + '\'' + ", jsonDescription='" + jsonDescription + '\'' + '}';
     }
 }

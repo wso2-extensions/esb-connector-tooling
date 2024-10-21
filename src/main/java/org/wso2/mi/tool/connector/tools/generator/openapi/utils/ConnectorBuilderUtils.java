@@ -1,4 +1,4 @@
-package org.wso2.mi.tool.connector.tools.generator.openapi;
+package org.wso2.mi.tool.connector.tools.generator.openapi.utils;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -6,6 +6,8 @@ import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
+import org.wso2.mi.tool.connector.tools.generator.openapi.Constants;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -16,30 +18,24 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 
-public class ConnectorBuilder {
+/**
+ * Builds the connector using Maven.
+ */
+public class ConnectorBuilderUtils {
 
-    private static final Log log = LogFactory.getLog(ConnectorBuilder.class);
-    private final Invoker invoker;
-
-    public ConnectorBuilder() {
-        invoker = new DefaultInvoker();
-    }
+    private static final Log log = LogFactory.getLog(ConnectorBuilderUtils.class);
+    private static final Invoker invoker = new DefaultInvoker();;
 
     public String build(String openAPISpecPath, String projectPath) {
         String connectorPath = null;
         try {
-            ConnectorProjectGenerator connectorProjectGenerator = new ConnectorProjectGenerator();
+            ProjectGeneratorUtils connectorProjectGenerator = new ProjectGeneratorUtils();
             String connectorProjectPath = connectorProjectGenerator.generateConnectorProject(openAPISpecPath, projectPath);
             connectorPath = buildConnector(connectorProjectPath);
         } catch (ConnectorGenException e) {
             log.error("Error occurred while building the connector.", e);
         }
         return connectorPath;
-    }
-
-    public static void main(String[] args) {
-        ConnectorBuilder connectorBuilder = new ConnectorBuilder();
-        connectorBuilder.build("/Users/arunan/wso2/connectors/esb-connector-facebookads/gen_resources/facebook_ads_open_api.yaml", "/Users/arunan/wso2/connectors/esb-connector-facebookads/gen_resources/target");
     }
 
 
@@ -49,7 +45,7 @@ public class ConnectorBuilder {
      * @param projectPath The path to the project directory.
      * @return True if the connector is built successfully, false otherwise.
      */
-    public String buildConnector(String projectPath) {
+    public static String buildConnector(String projectPath) {
 
         Path pomPath = Paths.get(projectPath, "pom.xml");
         InvocationRequest request = createBaseRequest(pomPath);
@@ -82,7 +78,7 @@ public class ConnectorBuilder {
      *
      * @return The configured invocation request.
      */
-    private InvocationRequest createBaseRequest(Path pomPath) {
+    private static InvocationRequest createBaseRequest(Path pomPath) {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setPomFile(pomPath.toFile());
         request.setInputStream(new ByteArrayInputStream(new byte[0])); // Avoid interactive mode
@@ -95,7 +91,7 @@ public class ConnectorBuilder {
      * @return The Maven home directory path, or null if it cannot be determined.
      * @throws ConnectorGenException if an error occurs while determining the Maven home directory.
      */
-    private String getMavenHome() throws ConnectorGenException {
+    private static String getMavenHome() throws ConnectorGenException {
 
         // First try to find Maven home using system property
         String mavenHome = System.getProperty("maven.home");

@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.mi.tool.connector.tools.generator.openapi;
+package org.wso2.mi.tool.connector.tools.generator.openapi.utils;
 
 import io.swagger.v3.core.util.Json;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -38,8 +38,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.log.NullLogChute;
-import org.wso2.mi.tool.connector.tools.generator.openapi.utils.CodegenUtils;
-import org.wso2.mi.tool.connector.tools.generator.openapi.utils.MimeTypes;
+import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
+import org.wso2.mi.tool.connector.tools.generator.openapi.Constants;
+import org.wso2.mi.tool.connector.tools.generator.openapi.model.Operation;
+import org.wso2.mi.tool.connector.tools.generator.openapi.model.Parameter;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -61,24 +63,59 @@ import java.util.Properties;
  * The VelocityConfigGenerator handles the generation of the openapi connector
  * project files.
  */
-public class ConnectorProjectGenerator {
+public class ProjectGeneratorUtils {
 
-    private static final Log log = LogFactory.getLog(ConnectorProjectGenerator.class);
+    private static final Log log = LogFactory.getLog(ProjectGeneratorUtils.class);
     private static List<Operation> operationList = new ArrayList<>();
     private static Map<String, String> parameterNameMap = new HashMap<>();
     private static Map<String, String> operationNameMap = new HashMap<>();
-    private final VelocityEngine velocityEngine;
+    private static final VelocityEngine velocityEngine = new VelocityEngine();
     static VelocityContext context;
-    private String connectorName;
-    private String pathToConnectorDir;
-    private String pathToMainDir;
-    private String pathToResourcesDir;
-    static String parentPath;
     static Map<String, Schema> componentsSchema;
 
-    public ConnectorProjectGenerator() {
+    public static String generateConnectorProject(String openAPISpecPath, String projectPath) throws
+            ConnectorGenException {
 
-        this.velocityEngine = new VelocityEngine();
+        String pathToConnectorDir = null;
+        ParseOptions parseOptions = new ParseOptions();
+        parseOptions.setResolve(true);
+        parseOptions.setResolveFully(true);
+        parseOptions.setResolveCombinators(true);
+        OpenAPIV3Parser oasParser = new OpenAPIV3Parser();
+        SwaggerParseResult result;
+        try {
+            result = oasParser.readLocation(openAPISpecPath, null, parseOptions);
+            OpenAPI openAPI = result.getOpenAPI();
+            if (openAPI != null) {
+                context = createVelocityContext(openAPI);
+                String artifactId = (String) context.get("artifactId");
+                String connectorName = context.get("connectorName").toString();
+                pathToConnectorDir = projectPath + "/generated/" + artifactId;
+                String pathToMainDir = pathToConnectorDir +
+                        "/src/main/java/org/wso2/carbon/" + connectorName + "connector";
+                String pathToResourcesDir = pathToConnectorDir + "/src/main/resources";
+                createConnectorDirectory(pathToConnectorDir, pathToMainDir, pathToResourcesDir,
+                        context.get("connectorName").toString());
+                copyConnectorStaticFiles(pathToConnectorDir, pathToResourcesDir);
+                componentsSchema = openAPI.getComponents().getSchemas();
+                readOpenAPISpecification(openAPI, pathToResourcesDir);
+                operationList.sort(Comparator.comparing(Operation::getName));
+                context.put("operations", operationList);
+                context.put("parameterNameMap", parameterNameMap);
+                generateConnectorConfig(pathToConnectorDir, pathToResourcesDir, pathToMainDir);
+                copyGenResources(openAPISpecPath, pathToConnectorDir);
+            } else {
+                String errorMsg = "Couldn't parse OpenAPI specification.";
+                CodegenUtils.handleException(errorMsg);
+            }
+        } catch (IOException | ConnectorGenException e) {
+            String errorMsg = "Error occurred while reading the OpenAPI specification";
+            CodegenUtils.handleException(errorMsg, e);
+        }
+        return pathToConnectorDir;
+    }
+
+    private static void initVelocityEngine() {
         Properties properties = new Properties();
         properties.setProperty("resource.loader", "class");
         properties.setProperty("class.resource.loader.class",
@@ -87,12 +124,8 @@ public class ConnectorProjectGenerator {
         velocityEngine.init(properties);
     }
 
-    void createConnectorDirectory() throws IOException {
-
-        String artifactId = (String) context.get("artifactId");
-        pathToConnectorDir = parentPath + "/generated/" + artifactId;
-        pathToMainDir = pathToConnectorDir + "/src/main/java/org/wso2/carbon/" + connectorName + "connector";
-        pathToResourcesDir = pathToConnectorDir + "/src/main/resources";
+    private static void createConnectorDirectory(String pathToConnectorDir, String pathToMainDir,
+                                                 String pathToResourcesDir, String connectorName) throws IOException {
 
         Files.createDirectories(Paths.get(pathToConnectorDir));
         Files.createDirectories(Paths.get(pathToMainDir));
@@ -104,7 +137,7 @@ public class ConnectorProjectGenerator {
         Files.createDirectories(Paths.get(pathToResourcesDir + "/uischema"));
     }
 
-    public void createAssemblyDirectory(String assemblyDirPath) {
+    private static void createAssemblyDirectory(String assemblyDirPath) {
         Path path = Paths.get(assemblyDirPath);
         try {
             Files.createDirectories(path);
@@ -114,8 +147,10 @@ public class ConnectorProjectGenerator {
         }
     }
 
-    void copyConnectorStaticFiles() throws IOException {
-        ClassLoader classLoader = getClass().getClassLoader();
+    private static void copyConnectorStaticFiles(String pathToConnectorDir, String pathToResourcesDir) throws IOException {
+
+        ClassLoader classLoader = ProjectGeneratorUtils.class.getClassLoader();
+        String artifactId = (String) context.get("artifactId");
 
         // create assembly directory
         createAssemblyDirectory(pathToConnectorDir + "/src/main/assembly");
@@ -155,7 +190,7 @@ public class ConnectorProjectGenerator {
         }
     }
 
-    private void mergeVelocityTemplate(String outputFile, String template) throws IOException {
+    private static void mergeVelocityTemplate(String outputFile, String template) throws IOException {
 
         File file = new File(outputFile);
         Writer writer = new FileWriter(file);
@@ -164,7 +199,8 @@ public class ConnectorProjectGenerator {
         writer.close();
     }
 
-    void generateConnectorConfig() throws IOException {
+    private static void generateConnectorConfig(String pathToConnectorDir, String pathToResourcesDir,
+                                                String pathToMainDir) throws IOException {
 
         String outputFile = pathToConnectorDir + "/pom.xml";
         String template = "templates/synapse/pom_template.vm";
@@ -184,18 +220,18 @@ public class ConnectorProjectGenerator {
 
         String auth = (String) context.get("auth");
         if (auth.equalsIgnoreCase("oauth2")) {
-            generateAuthFiles();
+            generateAuthFiles(pathToResourcesDir);
         } else if (auth.equalsIgnoreCase("basic")) {
-            generateBasicAuthFiles();
+            generateBasicAuthFiles(pathToResourcesDir);
         } else {
-            generateNoAuthFiles();
+            generateNoAuthFiles(pathToResourcesDir);
         }
 
-        generateJavaMainFiles();
-        generateDocs();
+        generateJavaMainFiles(pathToMainDir);
+        generateDocs(pathToConnectorDir);
     }
 
-    void copyGenResources(String openAPISpecificationPath) throws IOException {
+    private static void copyGenResources(String openAPISpecificationPath, String pathToConnectorDir) throws IOException {
 
         String genResourcesPath = pathToConnectorDir + "/gen_resources";
         String outputFile = genResourcesPath + "/README.md";
@@ -205,7 +241,7 @@ public class ConnectorProjectGenerator {
         FileUtils.copyFileToDirectory(new File(openAPISpecificationPath), new File(genResourcesPath));
     }
 
-    private void generateAuthFiles() throws IOException {
+    private static void generateAuthFiles(String pathToResourcesDir) throws IOException {
 
         String outputFile = pathToResourcesDir + "/uischema/init.json";
         String template = "templates/uischema/init_template.vm";
@@ -213,7 +249,7 @@ public class ConnectorProjectGenerator {
 
     }
 
-    private void generateNoAuthFiles() throws IOException {
+    private static void generateNoAuthFiles(String pathToResourcesDir) throws IOException {
 
         String outputFile = pathToResourcesDir + "/uischema/init.json";
         String template = "templates/uischema/init_no_auth_template.vm";
@@ -221,7 +257,7 @@ public class ConnectorProjectGenerator {
 
     }
 
-    private void generateBasicAuthFiles() throws IOException {
+    private static void generateBasicAuthFiles(String pathToResourcesDir) throws IOException {
 
         String outputFile = pathToResourcesDir + "/uischema/init.json";
         String template = "templates/uischema/init_basic_auth_template.vm";
@@ -229,14 +265,14 @@ public class ConnectorProjectGenerator {
 
     }
 
-    private void generateJavaMainFiles() throws IOException {
+    private static void generateJavaMainFiles(String pathToMainDir) throws IOException {
 
         String outputFile = pathToMainDir + "/URLBuilderUtil.java";
         String template = "templates/java/utils_template.vm";
         mergeVelocityTemplate(outputFile, template);
     }
 
-    private void generateDocs() throws IOException {
+    private static void generateDocs(String pathToConnectorDir) throws IOException {
 
         String outputFile = pathToConnectorDir + "/docs/config.md";
         String template = "templates/md/config_template.vm";
@@ -251,7 +287,7 @@ public class ConnectorProjectGenerator {
         mergeVelocityTemplate(outputFile, template);
     }
 
-    private Parameter readParameter(io.swagger.v3.oas.models.parameters.Parameter paramObject) {
+    private static Parameter readParameter(io.swagger.v3.oas.models.parameters.Parameter paramObject) {
 
         String paramName = paramObject.getName();
         boolean paramRequired = paramObject.getRequired();
@@ -275,7 +311,7 @@ public class ConnectorProjectGenerator {
         return param;
     }
 
-    private void readOpenAPISpecification(OpenAPI openAPI) throws ConnectorGenException, IOException {
+    private static void readOpenAPISpecification(OpenAPI openAPI, String pathToResourcesDir) throws ConnectorGenException, IOException {
 
         for (Map.Entry<String, PathItem> pathItemEntry : openAPI.getPaths().entrySet()) {
             String path = pathItemEntry.getKey();
@@ -409,7 +445,7 @@ public class ConnectorProjectGenerator {
                                                 queryParamList, headerParamList, cookieParamList);
                                 context.put(Constants.OP_CONTENT_TYPE, mime.toString());
                                 MediaType mediaType = content.get(mime.toString());
-                                readschema(operationName, operationLocal, mediaType, mime.toString());
+                                readschema(pathToResourcesDir, operationName, operationLocal, mediaType, mime.toString());
                                 contentTypeSet = true;
                                 break;
                             }
@@ -420,7 +456,7 @@ public class ConnectorProjectGenerator {
                                     .createOperation(operationName, path, operationDescription, pathParamList,
                                             queryParamList, headerParamList, cookieParamList);
                             operationLocal.setUnhandledContentType(true);
-                            addOperation(operationName, operationLocal);
+                            addOperation(pathToResourcesDir, operationName, operationLocal);
                         }
                     }
                 } else {
@@ -428,13 +464,14 @@ public class ConnectorProjectGenerator {
                     Operation operationLocal = CodegenUtils
                             .createOperation(operationName, path, operationDescription, pathParamList, queryParamList,
                                     headerParamList, cookieParamList);
-                    addOperation(operationName, operationLocal);
+                    addOperation(pathToResourcesDir, operationName, operationLocal);
                 }
             }
         }
     }
 
-    private void addOperation(String operationName, Operation operationLocal) throws IOException {
+    private static void addOperation(String pathToResourcesDir, String operationName, Operation operationLocal)
+            throws IOException {
 
         operationList.add(operationLocal);
         context.put(Constants.OPERATION, operationLocal);
@@ -444,8 +481,8 @@ public class ConnectorProjectGenerator {
         mergeVelocityTemplate(uischemaFileName, "templates/uischema/operation_template.vm");
     }
 
-    private void readschema(String operationName, Operation operationLocal, MediaType mediaType, String contentType)
-            throws IOException {
+    private static void readschema(String pathToResourcesDir, String operationName, Operation operationLocal,
+                            MediaType mediaType, String contentType) throws IOException {
 
         Schema schema = mediaType.getSchema();
         if (schema instanceof ComposedSchema) {
@@ -484,45 +521,12 @@ public class ConnectorProjectGenerator {
                 }
             }
         }
-        addOperation(operationName, operationLocal);
+        addOperation(pathToResourcesDir, operationName, operationLocal);
     }
 
-    public String generateConnectorProject(String openAPISpecPath, String projectPath) throws ConnectorGenException {
-
-        parentPath = projectPath;
-        ParseOptions parseOptions = new ParseOptions();
-        parseOptions.setResolve(true);
-        parseOptions.setResolveFully(true);
-        parseOptions.setResolveCombinators(true);
-        OpenAPIV3Parser oasParser = new OpenAPIV3Parser();
-        SwaggerParseResult result;
-        try {
-            result = oasParser.readLocation(openAPISpecPath, null, parseOptions);
-            OpenAPI openAPI = result.getOpenAPI();
-            if (openAPI != null) {
-                context = createVelocityContext(openAPI);
-                createConnectorDirectory();
-                copyConnectorStaticFiles();
-                componentsSchema = openAPI.getComponents().getSchemas();
-                readOpenAPISpecification(openAPI);
-                operationList.sort(Comparator.comparing(Operation::getName));
-                context.put("operations", operationList);
-                context.put("parameterNameMap", parameterNameMap);
-                generateConnectorConfig();
-                copyGenResources(openAPISpecPath );
-            } else {
-                String errorMsg = "Couldn't parse OpenAPI specification.";
-                CodegenUtils.handleException(errorMsg);
-            }
-        } catch (IOException | ConnectorGenException e) {
-            String errorMsg = "Error occurred while reading the OpenAPI specification";
-            CodegenUtils.handleException(errorMsg, e);
-        }
-        return pathToConnectorDir;
-    }
-
-    private VelocityContext createVelocityContext(OpenAPI openAPI) {
+    private static VelocityContext createVelocityContext(OpenAPI openAPI) {
         context = new VelocityContext();
+        initVelocityEngine();
         String connectorName = openAPI.getInfo().getTitle();
         if (StringUtils.isEmpty(connectorName)) {
             connectorName = "MIConnector";
@@ -530,7 +534,6 @@ public class ConnectorProjectGenerator {
         context.put("connectorName", connectorName);
         String resolvedConnectorName = connectorName.toLowerCase().replace(" ", "");
         String artifactId = "org.wso2.mi.connector." + resolvedConnectorName;
-        this.connectorName = resolvedConnectorName;
         context.put("artifactId", artifactId);
         context.put("auth", "none"); //TODO: improve this
         context.put("version", "1.0.0");

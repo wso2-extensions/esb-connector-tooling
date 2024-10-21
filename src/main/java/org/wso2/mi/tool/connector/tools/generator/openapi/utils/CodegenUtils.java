@@ -26,8 +26,8 @@ import org.apache.velocity.VelocityContext;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
-import org.wso2.mi.tool.connector.tools.generator.openapi.Operation;
-import org.wso2.mi.tool.connector.tools.generator.openapi.Parameter;
+import org.wso2.mi.tool.connector.tools.generator.openapi.model.Operation;
+import org.wso2.mi.tool.connector.tools.generator.openapi.model.Parameter;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
