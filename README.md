@@ -1,4 +1,4 @@
-## OpenAPI Connector Generation Tool
+## WSO2 MI Connector Generator
 
 This tool is used to generate a Micro Integrator connector for a given OpenAPI specification.
 

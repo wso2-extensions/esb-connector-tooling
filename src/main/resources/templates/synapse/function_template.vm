@@ -58,6 +58,8 @@
             <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
         #end
     #end
+    <parameter name="responseTarget" description="Indicates whether the response should be written to body or a property" />
+    <paramater name="targetPropertyName" description="Name of the property to which the response should be written"/>
     <sequence>
         <class name="org.wso2.carbon.${connectorName}connector.RestURLBuilder">
             <property name="operationPath" value="$operation.getPath()"/>
@@ -147,10 +149,26 @@
         #foreach ($param in $operation.getCookieParameters())
             <property name="$param.getName()" value="$func:$param.getParameterName()" scope="transport"/>
         #end
-        <call>
-            <endpoint>
-                <http method="$httpMethod" uri-template="{uri.var.base}{+uri.var.urlPath}{+uri.var.urlQuery}"/>
-            </endpoint>
-        </call>
+        <switch source="$func:responseTarget">
+            <case regex="body">
+                <call>
+                    <endpoint>
+                        <http method="$httpMethod" uri-template="{uri.var.base}{+uri.var.urlPath}{+uri.var.urlQuery}"/>
+                    </endpoint>
+                </call>
+            </case>
+            <case regex="property">
+                <call>
+                    <endpoint>
+                        <http method="$httpMethod" uri-template="{uri.var.base}{+uri.var.urlPath}{+uri.var.urlQuery}"/>
+                    </endpoint>
+                    <source type="body"/>
+                    <target type="property">TARGET</target>
+                </call>
+            </case>
+            <default>
+                <property name="TARGET" expression="$func:concat('body:', 'json')" scope="default" type="STRING"/>
+            </default>
+        </switch>
     </sequence>
 </template>

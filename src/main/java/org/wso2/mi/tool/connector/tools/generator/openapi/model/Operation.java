@@ -38,6 +38,7 @@ public class Operation {
     private List<Parameter> headerParameters;
     private List<Parameter> cookieParameters;
     private List<Parameter> requestParameters = new ArrayList<>();
+    private String responseTargetType;
 
     public Operation(String name, String path, String descriptions) {
 
@@ -174,6 +175,16 @@ public class Operation {
     public void setRequestParameters(List<Parameter> requestParameters) {
 
         this.requestParameters = requestParameters;
+    }
+
+    public String getResponseTargetType() {
+
+        return responseTargetType;
+    }
+
+    public void setResponseTargetType(String responseTargetType) {
+
+        this.responseTargetType = responseTargetType;
     }
 
     @Override

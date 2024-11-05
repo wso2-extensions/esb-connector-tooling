@@ -21,6 +21,5 @@
     <parameter name="base" description="The service root URL."/>
     <sequence>
         <property name="uri.var.base" expression="$func:base"/>
-        <class name="org.wso2.carbon.${connectorName}connector.URLBuilderUtil"/>
     </sequence>
 </template>

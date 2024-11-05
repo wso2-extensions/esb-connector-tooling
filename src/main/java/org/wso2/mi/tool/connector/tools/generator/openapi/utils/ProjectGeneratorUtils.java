@@ -37,7 +37,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
-import org.apache.velocity.runtime.log.NullLogChute;
 import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.openapi.Constants;
 import org.wso2.mi.tool.connector.tools.generator.openapi.model.Operation;
@@ -120,7 +119,6 @@ public class ProjectGeneratorUtils {
         properties.setProperty("resource.loader", "class");
         properties.setProperty("class.resource.loader.class",
                 "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-        velocityEngine.setProperty("runtime.log.logsystem.class", NullLogChute.class.getName());
         velocityEngine.init(properties);
     }
 
@@ -267,8 +265,8 @@ public class ProjectGeneratorUtils {
 
     private static void generateJavaMainFiles(String pathToMainDir) throws IOException {
 
-        String outputFile = pathToMainDir + "/URLBuilderUtil.java";
-        String template = "templates/java/utils_template.vm";
+        String outputFile = pathToMainDir + "/RestURLBuilder.java";
+        String template = "templates/java/rest_url_builder_template.vm";
         mergeVelocityTemplate(outputFile, template);
     }
 

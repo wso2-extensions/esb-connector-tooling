@@ -29,9 +29,8 @@
         <property name="_OH_INTERNAL_TOKEN_ENDPOINT_" expression="$func:tokenEndpoint"/>
         <filter source="boolean($ctx:_OH_INTERNAL_ACCESS_TOKEN_)" regex="true">
             <then>
-                <header name="Authorization" expression="fn:concat('Bearer ', $ctx:_OH_INTERNAL_ACCESS_TOKEN_)" scope="transport"/>
+                <header name="Authorization" expression="fn:concat('Bearer ', $func:clientId)" scope="transport"/>
             </then>
         </filter>
-        <class name="org.wso2.carbon.${connectorName}connector.URLBuilderUtil"/>
     </sequence>
 </template>

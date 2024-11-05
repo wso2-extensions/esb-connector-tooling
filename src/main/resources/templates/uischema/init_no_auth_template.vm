@@ -1,33 +1,30 @@
 {
     "connectorName": "$connectorName",
-    "operationName": "init",
-    "title": "Init",
-    "help": "<h1>Init</h1> <b>The init operation.</b>",
+    "connectionName": "$connectorName",
+    "title": "$connectorName connection",
+    "help": "$connectorName connection",
+    "markdownDescription": "#Init Summary\n \n# Prerequisites\n\n# Input\n\n# Output\n\n# Error\n\n# Example\n\n# Notes\n\n",
+    "testConnection": {
+        "operation": "ping",
+    },
     "elements": [
+        {
+            "type": "attribute",
+            "value": {
+                "name": "connectionName",
+                "displayName": "Connection Name",
+                "inputType": "string",
+                "defaultValue": "$connectorName_CONNECTION",
+                "required": "true",
+                "helpTip": "The name for the $connectorName connection.",
+                "validation": "nameWithoutSpecialCharactors"
+            }
+        },
         {
             "type": "attributeGroup",
             "value": {
                 "groupName": "General",
                 "elements": [
-                    {
-                        "type": "attributeGroup",
-                        "value": {
-                            "groupName": "Search",
-                            "elements": [
-                                {
-                                    "type": "attribute",
-                                    "value": {
-                                        "name": "search",
-                                        "displayName": "Search",
-                                        "inputType": "searchBox",
-                                        "defaultValue": "",
-                                        "required": "false",
-                                        "helpTip": "Search for an attribute using the display name"
-                                    }
-                                }
-                            ]
-                        }
-                    },
                     {
                         "type": "attributeGroup",
                         "value": {

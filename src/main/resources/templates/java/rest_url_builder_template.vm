@@ -25,15 +25,36 @@ import org.wso2.carbon.connector.core.ConnectException;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.StringJoiner;
 
 public class RestURLBuilder extends AbstractConnector {
 
     private static final String encoding = "UTF-8";
     private static final String URL_PATH = "uri.var.urlPath";
     private static final String URL_QUERY = "uri.var.urlQuery";
+    private static final String PROPERTY_ERROR_CODE = "ERROR_CODE";
+    private static final String PROPERTY_ERROR_MESSAGE = "ERROR_MESSAGE";
+    private static final String GENERAL_ERROR_MSG = "${connectorName} connector encountered an error: ";
+
     private String operationPath = "";
     private String pathParameters = "";
     private String queryParameters = "";
+
+    public static final Map<String, String> parameterNameMap = new HashMap<String, String>() {{
+
+        #foreach ($param in $parameterNameMap.entrySet())
+            put("$param.getKey()", "$param.getValue()");
+        #end
+    }};
+
+    static class ErrorCodes {
+
+            public static final String INVALID_CONFIG = "701102";
+            public static final String GENERAL_ERROR = "701101";
+        }
 
     public String getOperationPath() {
 
@@ -73,42 +94,46 @@ public class RestURLBuilder extends AbstractConnector {
             if (StringUtils.isNotEmpty(this.pathParameters)) {
                 String[] pathParameterList = getPathParameters().split(",");
                 for (String pathParameter : pathParameterList) {
+                    String name = parameterNameMap.get(pathParameter);
                     String paramValue = (String) getParameter(messageContext, pathParameter);
                     if (StringUtils.isNotEmpty(paramValue)) {
                         String encodedParamValue = URLEncoder.encode(paramValue, encoding);
-                        urlPath = urlPath.replace("{" + pathParameter + "}", encodedParamValue);
+                        urlPath = urlPath.replace("{" + name + "}", encodedParamValue);
                     } else {
-                        String errorMessage = Constants.GENERAL_ERROR_MSG + "Mapping parameter '" + pathParameter + "' is not set.";
-                        Utils.setErrorPropertiesToMessage(messageContext, Constants.ErrorCodes.INVALID_CONFIG, errorMessage);
+                        String errorMessage = GENERAL_ERROR_MSG + "Mapping parameter '" + pathParameter + "' is not set.";
+                        setErrorPropertiesToMessage(messageContext, ErrorCodes.INVALID_CONFIG, errorMessage);
                         handleException(errorMessage, messageContext);
                     }
                 }
             }
 
-            StringBuilder urlQueryBuilder = new StringBuilder();
+            StringJoiner urlQuery = new StringJoiner("&");
+            urlQuery.add("?");
             if (StringUtils.isNotEmpty(this.queryParameters)) {
                 String[] queryParameterList = getQueryParameters().split(",");
                 for (String queryParameter : queryParameterList) {
                     String paramValue = (String) getParameter(messageContext, queryParameter);
                     if (StringUtils.isNotEmpty(paramValue)) {
+                        String name = parameterNameMap.get(queryParameter);
                         String encodedParamValue = URLEncoder.encode(paramValue, encoding);
-                        urlQueryBuilder.append(queryParameter).append('=').append(encodedParamValue).append('&');
+                        urlQuery.add(name + "=" + encodedParamValue);
                     }
                 }
             }
 
-            String urlQuery = "";
-            if (urlQueryBuilder.length() > 0) {
-                urlQuery = "?" + urlQueryBuilder.substring(0, urlQueryBuilder.length() - 1);
-            }
-
             messageContext.setProperty(URL_PATH, urlPath);
-            messageContext.setProperty(URL_QUERY, urlQuery);
+            messageContext.setProperty(URL_QUERY, urlQuery.toString());
 
         } catch (UnsupportedEncodingException e) {
-            String errorMessage = Constants.GENERAL_ERROR_MSG + "Error occurred while constructing the URL query.";
-            Utils.setErrorPropertiesToMessage(messageContext, Constants.ErrorCodes.GENERAL_ERROR, errorMessage);
+            String errorMessage = GENERAL_ERROR_MSG + "Error occurred while constructing the URL query.";
+            setErrorPropertiesToMessage(messageContext, ErrorCodes.GENERAL_ERROR, errorMessage);
             handleException(errorMessage, messageContext);
         }
+    }
+
+    private void setErrorPropertiesToMessage(MessageContext messageContext, String errorCode, String errorMessage) {
+
+        messageContext.setProperty(PROPERTY_ERROR_CODE, errorCode);
+        messageContext.setProperty(PROPERTY_ERROR_MESSAGE, errorMessage);
     }
 }

@@ -3,6 +3,7 @@
     "operationName": "$operation.getName()",
     "title": "$operation.getDisplayName()",
     "help": "$operation.getDescription()",
+    "markdownDescription": "# Summary\n \n# Prerequisites\n\n# Input\n\n# Output\n\n# Error\n\n# Example\n\n# Notes\n\n",
     "elements": [
         {
             "type": "attributeGroup",
@@ -22,25 +23,6 @@
                           "defaultValue": "",
                           "required": "true",
                           "helpTip": "Connection to be used"
-                        }
-                    },
-                    {
-                        "type": "attributeGroup",
-                        "value": {
-                            "groupName": "Search",
-                            "elements": [
-                                {
-                                    "type": "attribute",
-                                    "value": {
-                                        "name": "search",
-                                        "displayName": "Search",
-                                        "inputType": "searchBox",
-                                        "defaultValue": "",
-                                        "required": "false",
-                                        "helpTip": "Search for an attribute using the display name"
-                                    }
-                                }
-                            ]
                         }
                     }
                     #if ($operation.getPathParameters().size() > 0 || $operation.getQueryParameters().size() > 0)
@@ -137,6 +119,36 @@
                         }
                     }
                     #end
+                    ,{
+                        "type":"attributeGroup",
+                        "value":{
+                            "groupName": "Response",
+                            "elements":[
+                                {
+                                    "type":"attribute",
+                                    "value":{
+                                        "name": "targetPropertyName",
+                                        "displayName": "Target",
+                                        "inputType": "string",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "Name of the variable to which the output of the operation should be assigned"
+                                    }
+                                },
+                                {
+                                    "type":"attribute",
+                                    "value":{
+                                        "name": "replaceBodyInMsgCtx",
+                                        "displayName": "Replace Message Body",
+                                        "inputType": "checkbox",
+                                        "defaultValue": "false",
+                                        "helpTip": "Replace the message body with the response of the operation. If this is selected, the response will not be stored in the variable specified in the 'Target' field.",
+                                        "required": "false"
+                                    }
+                                }
+                            ]
+                        }
+                    }
                 ]
             }
         }

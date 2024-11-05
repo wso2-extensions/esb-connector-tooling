@@ -20,8 +20,7 @@ package org.wso2.mi.tool.connector.tools.generator.openapi.utils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.text.StringEscapeUtils;
-import org.apache.commons.text.WordUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.velocity.VelocityContext;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -90,7 +89,8 @@ public class CodegenUtils {
         str = str.replaceAll("[,.\\-_]", " ");
         str = str.replaceAll("[&']", "");
         str = str.replaceAll("\\s+", " ");
-        str = WordUtils.capitalize(str);
+        // capitalize using apache commons
+        str = StringUtils.capitalize(str);
 
         if (str.startsWith(" ")) {
             str = str.substring(1);
@@ -168,7 +168,8 @@ public class CodegenUtils {
 
     /**
      * Read properties given via a JSON object and populate velocity context
-     * @param conectorsObject
+     * @param properties properties object
+     * connectorName: name of the connector
      * @return
      * @throws ConnectorGenException
      * @throws IOException
