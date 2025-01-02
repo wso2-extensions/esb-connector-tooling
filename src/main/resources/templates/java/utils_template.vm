@@ -17,33 +17,43 @@
  */
 package org.wso2.carbon.${connectorName}connector;
 
+import org.apache.axiom.om.OMElement;
+import org.apache.axiom.soap.SOAPBody;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.MessageContext;
-import org.apache.synapse.SynapseConstants;
-import org.wso2.carbon.connector.core.AbstractConnector;
+import org.apache.synapse.commons.json.JsonUtil;
+import org.apache.synapse.core.axis2.Axis2MessageContext;
+import org.apache.synapse.transport.passthru.PassThroughConstants;
 
+import com.google.gson.JsonObject;
 import java.util.HashMap;
 import java.util.Map;
+
 
 // Generated on $timestamp
 
 /**
  * The Utils class contains all the utils methods related to the connector.
  */
-public class URLBuilderUtil extends AbstractConnector {
+public class Utils {
 
-    private static final Log log = LogFactory.getLog(URLBuilderUtil.class);
+    private static final Log log = LogFactory.getLog(Utils.class);
 
-    public static final Map<String, String> parameterNameMap = new HashMap<String, String>() {{
+    public static void populateOperationResult(MessageContext messageContext, OMElement payload, String targetVariable,
+                        JsonObject attributes, boolean replaceBody) {
 
-    #foreach ($param in $parameterNameMap.entrySet())
-        put("$param.getKey()", "$param.getValue()");
-    #end
-    }};
-
-    @Override
-        public void connect(MessageContext messageContext) {
-            messageContext.setProperty("_OH_INTERNAL_PARAM_NAME_MAP_", parameterNameMap);
+        Map < String, Object > results = new HashMap < > ();
+        results.put("payload", payload);
+        results.put("attributes", attributes);
+        messageContext.setVariable(targetVariable, results);
+        if (replaceBody) {
+            SOAPBody soapBody = messageContext.getEnvelope().getBody();
+            //Detaching first element (soapBody.getFirstElement().detach()) will be done by following method anyway.
+            JsonUtil.removeJsonPayload(((Axis2MessageContext) messageContext).getAxis2MessageContext());
+            ((Axis2MessageContext) messageContext).getAxis2MessageContext().
+                    removeProperty(PassThroughConstants.NO_ENTITY_BODY);
+            soapBody.addChild(payload);
         }
+    }
 }

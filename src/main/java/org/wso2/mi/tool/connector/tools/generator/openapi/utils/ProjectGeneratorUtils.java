@@ -133,6 +133,7 @@ public class ProjectGeneratorUtils {
         Files.createDirectories(Paths.get(pathToResourcesDir + "/functions"));
         Files.createDirectories(Paths.get(pathToResourcesDir + "/icon"));
         Files.createDirectories(Paths.get(pathToResourcesDir + "/uischema"));
+        Files.createDirectories(Paths.get(pathToResourcesDir + "/outputschema"));
     }
 
     private static void createAssemblyDirectory(String assemblyDirPath) {
@@ -268,6 +269,10 @@ public class ProjectGeneratorUtils {
         String outputFile = pathToMainDir + "/RestURLBuilder.java";
         String template = "templates/java/rest_url_builder_template.vm";
         mergeVelocityTemplate(outputFile, template);
+
+        String utilFile = pathToMainDir + "/Utils.java";
+        String utilTemplate = "templates/java/utils_template.vm";
+        mergeVelocityTemplate(utilFile, utilTemplate);
     }
 
     private static void generateDocs(String pathToConnectorDir) throws IOException {
@@ -395,6 +400,19 @@ public class ProjectGeneratorUtils {
                     log.warn("Success response not available.");
                 }
 
+                String responseSchema = "";
+                if (apiResponse != null) {
+                    Content successContent = apiResponse.getContent();
+                    if (successContent != null && !successContent.isEmpty()) {
+                        for (MimeTypes mime : MimeTypes.values()) {
+                            if (successContent.containsKey(mime.toString())) {
+                                MediaType mediaType = successContent.get(mime.toString());
+                                responseSchema = Json.pretty(mediaType.getSchema());
+                            }
+                        }
+                    }
+                }
+
                 List<Parameter> pathParamList = new ArrayList<>(pathItemPathParamList);
                 List<Parameter> queryParamList = new ArrayList<>(pathItemQueryParamList);
                 List<Parameter> headerParamList = new ArrayList<>(pathItemHeaderParamList);
@@ -440,7 +458,7 @@ public class ProjectGeneratorUtils {
                             if (content.containsKey(mime.toString())) {
                                 Operation operationLocal = CodegenUtils
                                         .createOperation(operationName, path, operationDescription, pathParamList,
-                                                queryParamList, headerParamList, cookieParamList);
+                                                queryParamList, headerParamList, cookieParamList, responseSchema);
                                 context.put(Constants.OP_CONTENT_TYPE, mime.toString());
                                 MediaType mediaType = content.get(mime.toString());
                                 readschema(pathToResourcesDir, operationName, operationLocal, mediaType, mime.toString());
@@ -452,7 +470,7 @@ public class ProjectGeneratorUtils {
                             CodegenUtils.removeFromContext(Constants.OP_CONTENT_TYPE, context);
                             Operation operationLocal = CodegenUtils
                                     .createOperation(operationName, path, operationDescription, pathParamList,
-                                            queryParamList, headerParamList, cookieParamList);
+                                            queryParamList, headerParamList, cookieParamList, responseSchema);
                             operationLocal.setUnhandledContentType(true);
                             addOperation(pathToResourcesDir, operationName, operationLocal);
                         }
@@ -461,7 +479,7 @@ public class ProjectGeneratorUtils {
                     CodegenUtils.removeFromContext(Constants.OP_CONTENT_TYPE, context);
                     Operation operationLocal = CodegenUtils
                             .createOperation(operationName, path, operationDescription, pathParamList, queryParamList,
-                                    headerParamList, cookieParamList);
+                                    headerParamList, cookieParamList, responseSchema);
                     addOperation(pathToResourcesDir, operationName, operationLocal);
                 }
             }
@@ -475,8 +493,10 @@ public class ProjectGeneratorUtils {
         context.put(Constants.OPERATION, operationLocal);
         String synapseFileName = pathToResourcesDir + "/functions/" + operationName + ".xml";
         String uischemaFileName = pathToResourcesDir + "/uischema/" + operationName + ".json";
+        String outputSchemaFileName = pathToResourcesDir + "/outputschema/" + operationName + ".json";
         mergeVelocityTemplate(synapseFileName, "templates/synapse/function_template.vm");
         mergeVelocityTemplate(uischemaFileName, "templates/uischema/operation_template.vm");
+        mergeVelocityTemplate(outputSchemaFileName, "templates/outputschema/operation_response_schema_template.vm");
     }
 
     private static void readschema(String pathToResourcesDir, String operationName, Operation operationLocal,
@@ -538,5 +558,9 @@ public class ProjectGeneratorUtils {
         context.put("groupId", "org.wso2.mi.connector");
         context.put("connectorName", resolvedConnectorName);
         return context;
+    }
+
+    private static void responseSchemaToFile(Schema responseSchema, String filePath) {
+
     }
 }

@@ -19,6 +19,7 @@
 
 <template name="init" onError="fault" xmlns="http://ws.apache.org/ns/synapse">
     <parameter name="base" description="The service root URL."/>
+    <parameter name="blocking" description="Whether to use blocking transport"/>
     <sequence>
         <property name="uri.var.base" expression="$func:base"/>
     </sequence>

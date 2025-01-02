@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": "$connectorName $operation.getName() Operation Response Schema",
+    "description": "Schema representing the output of the $operation.getName() operation in $connectorName",
+    "properties": {
+       #if ($operation.getResponseSchema() != "")
+        "payload": $operation.getResponseSchema(),
+      #else
+        "payload": {
+            "type": "object",
+            "description": "Payload of the API response.",
+            "additionalProperties": true
+        }
+      #end
+      "attributes": {
+        "type": "object",
+        "description": "Metadata about the operation.",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code of the API response.",
+            "minimum": 100,
+            "maximum": 599
+          }
+        },
+        "required": ["statusCode"],
+        "additionalProperties": false
+      },
+      "headers": {
+        "type": "object",
+        "description": "HTTP headers of the API response.",
+        "additionalProperties": false
+      }
+    },
+    "required": ["payload", "attributes", "headers"],
+    "additionalProperties": false
+  }

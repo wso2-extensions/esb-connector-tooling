@@ -17,6 +17,8 @@
  */
 package org.wso2.mi.tool.connector.tools.generator.openapi.model;
 
+import io.swagger.v3.oas.models.media.Schema;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +41,8 @@ public class Operation {
     private List<Parameter> cookieParameters;
     private List<Parameter> requestParameters = new ArrayList<>();
     private String responseTargetType;
+    private String authType;
+    private String responseSchema;
 
     public Operation(String name, String path, String descriptions) {
 
@@ -187,6 +191,26 @@ public class Operation {
         this.responseTargetType = responseTargetType;
     }
 
+    public String getAuthType() {
+
+        return authType;
+    }
+
+    public void setAuthType(String authType) {
+
+        this.authType = authType;
+    }
+
+    public String getResponseSchema() {
+
+        return responseSchema;
+    }
+
+    public void setResponseSchema(String responseSchema) {
+
+        this.responseSchema = responseSchema;
+    }
+
     @Override
     public String toString() {
 
@@ -194,6 +218,7 @@ public class Operation {
                 '\'' + ", description='" + description + '\'' + ", xmlDescription='" +
                 xmlDescription + '\'' + ", documentationLink='" + documentationLink + '\'' + ", pathParameters=" +
                 pathParameters + ", queryParameters=" + queryParameters + ", headerParameters=" + headerParameters +
-                ", cookieParameters=" + cookieParameters + ", requestParameters=" + requestParameters +  '}';
+                ", cookieParameters=" + cookieParameters + ", requestParameters=" + requestParameters +
+                ", responseTargetType='" + responseTargetType + '\'' + ", authType='" + authType + '\'' + '}';
     }
 }

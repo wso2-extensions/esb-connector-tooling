@@ -19,18 +19,12 @@
 
 <template name="init" onError="fault" xmlns="http://ws.apache.org/ns/synapse">
     <parameter name="base" description="The service root URL."/>
-    <parameter name="accessToken" description="Represents the authorization of a specific application to access specific parts of a user’s data."/>
     <parameter name="clientId" description="Client ID of the registered application."/>
     <parameter name="clientSecret" description="Client secret of the registered application."/>
     <parameter name="tokenEndpoint" description="An HTTP endpoint that can be uses to obtain an access token."/>
     <parameter name="scope" description="The scope of the resources that will be accessed."/>
+    <parameter name="blocking" description="Whether to use blocking transport"/>
     <sequence>
-        <property name="_OH_INTERNAL_CLIENT_ID_" expression="$func:clientId"/>
-        <property name="_OH_INTERNAL_TOKEN_ENDPOINT_" expression="$func:tokenEndpoint"/>
-        <filter source="boolean($ctx:_OH_INTERNAL_ACCESS_TOKEN_)" regex="true">
-            <then>
-                <header name="Authorization" expression="fn:concat('Bearer ', $func:clientId)" scope="transport"/>
-            </then>
-        </filter>
+        <property name="${connectorName}Blocking" expression="$func:blocking" scope="default" type="STRING"/>
     </sequence>
 </template>

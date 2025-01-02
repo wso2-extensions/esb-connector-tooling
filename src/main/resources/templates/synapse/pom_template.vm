@@ -44,7 +44,7 @@
 
     <properties>
             <connector.name>$connectorName</connector.name>
-            <synapse.version>4.0.0-wso2v20</synapse.version>
+            <synapse.version>4.0.0-wso2v154</synapse.version>
             <carbon.mediation.version>4.7.175</carbon.mediation.version>
         </properties>
 

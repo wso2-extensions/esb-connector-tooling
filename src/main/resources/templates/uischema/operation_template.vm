@@ -127,10 +127,10 @@
                                 {
                                     "type":"attribute",
                                     "value":{
-                                        "name": "targetPropertyName",
+                                        "name": "responseVariable",
                                         "displayName": "Target",
                                         "inputType": "string",
-                                        "defaultValue": "",
+                                        "deriveResponseVariable" : true,
                                         "required": "true",
                                         "helpTip": "Name of the variable to which the output of the operation should be assigned"
                                     }
@@ -138,11 +138,11 @@
                                 {
                                     "type":"attribute",
                                     "value":{
-                                        "name": "replaceBodyInMsgCtx",
+                                        "name": "overwriteBody",
                                         "displayName": "Replace Message Body",
                                         "inputType": "checkbox",
                                         "defaultValue": "false",
-                                        "helpTip": "Replace the message body with the response of the operation. If this is selected, the response will not be stored in the variable specified in the 'Target' field.",
+                                        "helpTip": "Replace the Message Body in Message Context with the response of the operation.",
                                         "required": "false"
                                     }
                                 }

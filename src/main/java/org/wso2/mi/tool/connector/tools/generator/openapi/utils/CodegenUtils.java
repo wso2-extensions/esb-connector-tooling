@@ -151,7 +151,7 @@ public class CodegenUtils {
      */
     public static Operation createOperation(String name, String path, String description, List<Parameter> pathParameterList,
                                             List<Parameter> queryParameterList, List<Parameter> headerParameterList,
-                                            List<Parameter> cookieParameterList) {
+                                            List<Parameter> cookieParameterList, String responseSchema) {
 
         Operation operation = new Operation(name, path, description);
         operation.setPathParameters(pathParameterList);
@@ -163,6 +163,7 @@ public class CodegenUtils {
         String documentationLink = displayName.replaceAll(" ", "-").toLowerCase();
         operation.setDocumentationLink(documentationLink);
         operation.setXmlDescription(StringEscapeUtils.escapeXml10(description));
+        operation.setResponseSchema(responseSchema);
         return operation;
     }
 
