@@ -1,4 +1,4 @@
-{
+ {
     "connectorName" : "$connectorName",
     "operationName" : "init",
     "title" : "Init",

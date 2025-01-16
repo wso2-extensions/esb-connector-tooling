@@ -2,9 +2,10 @@
 #set ( $hash = '#' )
 #set ( $ocb = '{' )
 #set ( $ccb = '}' )
+#set ( $col = ':' )
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- ~  Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ ~  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  ~
  ~  WSO2 LLC. licenses this file to you under the Apache License,
  ~  Version 2.0 (the "License"); you may not use this file except
@@ -76,11 +77,10 @@
                     <payloadFactory media-type="json" template-type="freemarker">
                         <format>
                             <![CDATA[{
+                            <${hash}assign hasPrevious = false>
                             #set($count = 1)
                             #foreach ($parameter in $operation.getRequestParameters())
-                                <${hash}if (args.arg${count})?has_content>
-                                    "$parameter.getName()": "${ds}${ocb}args.arg${count}${ccb}"#if($velocityCount < $operation.getRequestParameters().size()),#end
-                                </${hash}if>
+                                <${hash}if (args.arg${count})?has_content>#if($count > 1)<${hash}if hasPrevious>,</${hash}if>#end"$parameter.getName()":#if ($parameter.getJsonDescription() == " Type: integer" || $parameter.getJsonDescription() == " Type: boolean")${ds}${ocb}args.arg${count}${ccb}#else"${ds}${ocb}args.arg${count}${ccb}"#end#if($count < $operation.getRequestParameters().size())<${hash}assign hasPrevious = true>#end</${hash}if>
                                 #set($count = $count + 1)
                             #end
                             }]]>
@@ -152,12 +152,14 @@
         <call>
             <endpoint>
                 <http method="$httpMethod" uri-template="{uri.var.base}{+uri.var.urlPath}{+uri.var.urlQuery}">
+                #if ($auth == "basic")
                     <authentication>
                         <basicAuth>
                             <username>$func:$operation.getUsername()</username>
                             <password>$func:$operation.getPassword()</password>
                         </basicAuth>
                     </authentication>
+                #end
                 </http>
             </endpoint>
         </call>

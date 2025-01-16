@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -95,7 +95,7 @@ public class ProjectGeneratorUtils {
                 String pathToResourcesDir = pathToConnectorDir + "/src/main/resources";
                 createConnectorDirectory(pathToConnectorDir, pathToMainDir, pathToResourcesDir,
                         context.get("connectorName").toString());
-                copyConnectorStaticFiles(pathToConnectorDir, pathToResourcesDir);
+                copyConnectorStaticFiles(pathToConnectorDir, pathToResourcesDir, pathToMainDir);
                 componentsSchema = openAPI.getComponents().getSchemas();
                 readOpenAPISpecification(openAPI, pathToResourcesDir);
                 operationList.sort(Comparator.comparing(Operation::getName));
@@ -146,7 +146,7 @@ public class ProjectGeneratorUtils {
         }
     }
 
-    private static void copyConnectorStaticFiles(String pathToConnectorDir, String pathToResourcesDir) throws IOException {
+    private static void copyConnectorStaticFiles(String pathToConnectorDir, String pathToResourcesDir,String pathToMainDir) throws IOException {
 
         ClassLoader classLoader = ProjectGeneratorUtils.class.getClassLoader();
         String artifactId = (String) context.get("artifactId");
@@ -160,18 +160,32 @@ public class ProjectGeneratorUtils {
                 Files.copy(staticFilesStream, Paths.get(pathToConnectorDir + "/src/main/assembly/assemble-connector.xml"), StandardCopyOption.REPLACE_EXISTING);
             }
         }
-
         // Determine the template based on the auth type
         String auth = (String) context.get("auth");
-        String outputFile = pathToResourcesDir + "/config/init.xml";
+        String outputFile;
         String template;
         if (auth.equalsIgnoreCase("oauth2")) {
-            template = "templates/auth/init_template.vm";
+            String[][] oauth2Templates = {
+                    {"templates/java/in_memory_token_store_template.vm", "/InMemoryTokenStore.java"},
+                    {"templates/java/token_store_template.vm", "/TokenStore.java"},
+                    {"templates/java/token_handler_template.vm", "/TokenHandler.java"},
+                    {"templates/java/token_manager_template.vm", "/TokenManager.java"},
+                    {"templates/java/token_template.vm", "/Token.java"},
+                    {"templates/java/constants_template.vm", "/Constants.java"}
+            };
+
+            for (String[] entry : oauth2Templates) {
+                template = entry[0];
+                outputFile = pathToMainDir + entry[1];
+                mergeVelocityTemplate(outputFile, template);
+            }
+            template = "templates/auth/init_oauth2_template.vm";
         } else if (auth.equalsIgnoreCase("basic")) {
             template = "templates/auth/init_basic_auth_template.vm";
         } else {
             template = "templates/auth/init_no_auth_template.vm";
         }
+        outputFile = pathToResourcesDir + "/config/init.xml";
         mergeVelocityTemplate(outputFile, template);
 
         // Copy icon directory
@@ -219,7 +233,7 @@ public class ProjectGeneratorUtils {
 
         String auth = (String) context.get("auth");
         if (auth.equalsIgnoreCase("oauth2")) {
-            generateAuthFiles(pathToResourcesDir);
+            generateOAuth2Files(pathToResourcesDir);
         } else if (auth.equalsIgnoreCase("basic")) {
             generateBasicAuthFiles(pathToResourcesDir);
         } else {
@@ -240,10 +254,10 @@ public class ProjectGeneratorUtils {
         FileUtils.copyFileToDirectory(new File(openAPISpecificationPath), new File(genResourcesPath));
     }
 
-    private static void generateAuthFiles(String pathToResourcesDir) throws IOException {
+    private static void generateOAuth2Files(String pathToResourcesDir) throws IOException {
 
         String outputFile = pathToResourcesDir + "/uischema/init.json";
-        String template = "templates/uischema/init_template.vm";
+        String template = "templates/uischema/init_oauth2_template.vm";
         mergeVelocityTemplate(outputFile, template);
 
     }
@@ -550,17 +564,26 @@ public class ProjectGeneratorUtils {
             connectorName = "MIConnector";
         }
         context.put("connectorName", connectorName);
+        context.put("defaultUrl",openAPI.getServers().get(0).getUrl());
         String resolvedConnectorName = connectorName.toLowerCase().replace(" ", "");
         String artifactId = "org.wso2.mi.connector." + resolvedConnectorName;
         context.put("artifactId", artifactId);
-        context.put("auth", "none"); //TODO: improve this
+
+        if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null) {
+            if (openAPI.getComponents().getSecuritySchemes().containsKey("oauth2")) {
+                context.put("auth", "oauth2");
+            } else if (openAPI.getComponents().getSecuritySchemes().containsKey("basic")) {
+                context.put("auth", "basic");
+            } else {
+                context.put("auth", "noauth");
+            }
+        } else {
+            context.put("auth", "noauth");
+        }
+
         context.put("version", "1.0.0");
         context.put("groupId", "org.wso2.mi.connector");
         context.put("connectorName", resolvedConnectorName);
         return context;
-    }
-
-    private static void responseSchemaToFile(Schema responseSchema, String filePath) {
-
     }
 }
