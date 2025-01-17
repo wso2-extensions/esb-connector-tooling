@@ -1,0 +1,77 @@
+{
+   "connectorName":"$connectorName",
+   "connectionName":"$connectorName",
+   "title":"$connectorName connection",
+   "help":"$connectorName connection",
+   "elements":[
+      {
+         "type":"attributeGroup",
+         "value":{
+            "groupName":"General",
+            "elements":[
+               {
+                  "type":"attribute",
+                  "value":{
+                     "name":"connectionName",
+                     "displayName":"Connection Name",
+                     "inputType":"string",
+                     "defaultValue":"${connectorName}_CONNECTION",
+                     "required":"true",
+                     "helpTip":"The name for the $connectorName connection.",
+                     "validation":"nameWithoutSpecialCharactors"
+                  }
+               },
+               {
+                  "type":"attributeGroup",
+                  "value":{
+                     "groupName":"Basic",
+                     "elements":[
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"base",
+                              "displayName":"Base URL",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"$defaultUrl",
+                              "required":"true",
+                              "helpTip":"The service root URL."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"apiKey",
+                              "displayName":"API KEY",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"false",
+                              "helpTip":"Client ID of the registered application."
+                           }
+                        }
+                     ]
+                  }
+               },
+               {
+                  "type":"attributeGroup",
+                  "value":{
+                     "groupName":"Advanced",
+                     "elements":[
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"blocking",
+                              "displayName":"Use Blocking Transport",
+                              "inputType":"combo",
+                              "defaultValue":"false",
+                              "required":"true",
+                              "helpTip":"Indicates whether the operation should be executed using blocking transport."
+                           }
+                        }
+                     ]
+                  }
+               }
+            ]
+         }
+      }
+   ]
+}

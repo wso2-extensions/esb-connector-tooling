@@ -182,6 +182,8 @@ public class ProjectGeneratorUtils {
             template = "templates/auth/init_oauth2_template.vm";
         } else if (auth.equalsIgnoreCase("basic")) {
             template = "templates/auth/init_basic_auth_template.vm";
+        } else if (auth.equalsIgnoreCase("apiKey")) {
+            template = "templates/auth/init_api_key_auth_template.vm";
         } else {
             template = "templates/auth/init_no_auth_template.vm";
         }
@@ -232,10 +234,13 @@ public class ProjectGeneratorUtils {
         mergeVelocityTemplate(outputFile, template);
 
         String auth = (String) context.get("auth");
-        if (auth.equalsIgnoreCase("oauth2")) {
+        String oAuth2Flow = (String) context.get("oauth2flow");
+        if (auth.equalsIgnoreCase("oauth2") && oAuth2Flow.equalsIgnoreCase("client_credentials")) {
             generateOAuth2Files(pathToResourcesDir);
         } else if (auth.equalsIgnoreCase("basic")) {
             generateBasicAuthFiles(pathToResourcesDir);
+        } else if (auth.equalsIgnoreCase("apiKey")) {
+            generateApiKeyAuthFiles(pathToResourcesDir);
         } else {
             generateNoAuthFiles(pathToResourcesDir);
         }
@@ -255,15 +260,12 @@ public class ProjectGeneratorUtils {
     }
 
     private static void generateOAuth2Files(String pathToResourcesDir) throws IOException {
-
         String outputFile = pathToResourcesDir + "/uischema/init.json";
         String template = "templates/uischema/init_oauth2_template.vm";
         mergeVelocityTemplate(outputFile, template);
-
     }
 
     private static void generateNoAuthFiles(String pathToResourcesDir) throws IOException {
-
         String outputFile = pathToResourcesDir + "/uischema/init.json";
         String template = "templates/uischema/init_no_auth_template.vm";
         mergeVelocityTemplate(outputFile, template);
@@ -287,6 +289,12 @@ public class ProjectGeneratorUtils {
         String utilFile = pathToMainDir + "/Utils.java";
         String utilTemplate = "templates/java/utils_template.vm";
         mergeVelocityTemplate(utilFile, utilTemplate);
+    }
+
+    private static void generateApiKeyAuthFiles(String pathToResourcesDir) throws IOException {
+        String outputFile = pathToResourcesDir + "/uischema/init.json";
+        String template = "templates/uischema/init_api_key_auth_template.vm";
+        mergeVelocityTemplate(outputFile, template);
     }
 
     private static void generateDocs(String pathToConnectorDir) throws IOException {
@@ -564,16 +572,23 @@ public class ProjectGeneratorUtils {
             connectorName = "MIConnector";
         }
         context.put("connectorName", connectorName);
-        context.put("defaultUrl",openAPI.getServers().get(0).getUrl());
+        context.put("defaultUrl", openAPI.getServers().get(0).getUrl());
         String resolvedConnectorName = connectorName.toLowerCase().replace(" ", "");
         String artifactId = "org.wso2.mi.connector." + resolvedConnectorName;
         context.put("artifactId", artifactId);
 
         if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null) {
             if (openAPI.getComponents().getSecuritySchemes().containsKey("oauth2")) {
-                context.put("auth", "oauth2");
+                if (openAPI.getComponents().getSecuritySchemes().get("oauth2").getFlows().getClientCredentials() != null) {
+                    context.put("auth", "oauth2");
+                    context.put("oauth2flow", "client_credentials");
+                } else {
+                    context.put("auth", "noauth");
+                }
             } else if (openAPI.getComponents().getSecuritySchemes().containsKey("basic")) {
                 context.put("auth", "basic");
+            } else if (openAPI.getComponents().getSecuritySchemes().containsKey("apiKey")) {
+                context.put("auth", "apiKey");
             } else {
                 context.put("auth", "noauth");
             }
