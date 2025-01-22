@@ -19,11 +19,15 @@ The tool generates a Micro Integrator connector for a given OpenAPI specificatio
 
 ### 2.1 OpenAPI operation to Synapse template mapping
 
+## 2. OpenAPI to Synapse Mapping
+
+### 2.1 OpenAPI operation to Synapse template mapping
+
 #### 2.1.1 Authentication
 
-Defining the authentication mechanism in the OpenAPI specification is important to generate the Synapse template with the necessary authentication headers.
+The MI Connector Generator tool supports one of the following authentication mechanisms: Basic Authentication, API Key Authentication, OAuth2 Client Credentials, and OAuth2 Authorization Code. If more than one authentication mechanism is defined, the first one will be taken and others will be ignored.
 
-- Basic authentication
+- **Basic Authentication**
 
 In the OpenAPI specification, basic authentication is defined as follows:
 
@@ -35,13 +39,21 @@ components:
       scheme: basic
 ```
 
-In the Synapse template, the basic authentication is added as follows:
+Generated files:
+- `init.xml` with the following Synapse logic:
 
 ```xml
 <property name="Authorization" expression="fn:concat('Basic ', base64Encode('username:password'))" scope="transport"/>
 ```
 
-- API key authentication
+Properties to be entered by the user:
+
+| Property  | Description                  | Required |
+|-----------|------------------------------|----------|
+| username  | Username for authentication  | Yes      |
+| password  | Password for authentication  | Yes      |
+
+- **API Key Authentication**
 
 In the OpenAPI specification, API key authentication is defined as follows:
 
@@ -54,53 +66,104 @@ components:
       name: X-API-Key
 ```
 
-In the Synapse template, the API key authentication is added as follows:
+Generated files:
+- `ApiKeyAuthHandler.java`
+- `init.xml` with the following Synapse logic:
 
 ```xml
 <property name="X-API-Key" expression="fn:concat('Bearer ', get-property('uri.var.api_key'))" scope="transport"/>
 ```
 
-- OAuth2 authentication
+***Note: The `name` attribute in the OpenAPI specification is used as the header name in the Synapse template.***
 
-In the OpenAPI specification, OAuth2 authentication is defined as follows:
+Properties to be entered by the user:
+
+| Property | Description                        | Required |
+|----------|------------------------------------|----------|
+| api_key  | API key for authentication         | Yes      |
+
+- **OAuth2 Client Credentials**
+
+In the OpenAPI specification, OAuth2 Client Credentials authentication is defined as follows:
 
 ```yaml
 components:
   securitySchemes:
-    oauth2:
+    oauth2ClientCredentials:
       type: oauth2
       flows:
-        implicit:
-          authorizationUrl: https://example.com/oauth/authorize
+        clientCredentials:
+          tokenUrl: https://example.com/oauth/token
           scopes:
             read: Grants read access
             write: Grants write access
 ```
 
-In the Synapse template, the OAuth2 authentication is added as follows:
+Generated files:
+- `InMemoryTokenStore.java`
+- `TokenStore.java`
+- `TokenManager.java`
+- `Token.java`
+- `ClientCredentialsTokenHandler.java`
+- `Constants.java`
+- `init.xml` with the following Synapse logic:
 
 ```xml
 <property name="Authorization" expression="fn:concat('Bearer ', get-property('uri.var.access_token'))" scope="transport"/>
 ```
 
-- OpenID Connect authentication
+Properties to be entered by the user:
 
-In the OpenAPI specification, OpenID Connect authentication is defined as follows:
+| Property       | Description                                | Required |
+|----------------|--------------------------------------------|----------|
+| clientId       | Client ID of the registered application    | Yes      |
+| clientSecret   | Client secret of the registered application| Yes      |
+| tokenEndpoint  | Token endpoint URL                         | Yes      |
+| scope          | Scope of the resources                     | No       |
+
+- **OAuth2 Authorization Code**
+
+In the OpenAPI specification, OAuth2 Authorization Code authentication is defined as follows:
 
 ```yaml
 components:
   securitySchemes:
-    openIdConnect:
-      type: openIdConnect
-      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+    oauth2AuthorizationCode:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Grants read access
+            write: Grants write access
 ```
 
-In the Synapse template, the OpenID Connect authentication is added as follows:
+Generated files:
+- `InMemoryTokenStore.java`
+- `TokenStore.java`
+- `TokenManager.java`
+- `Token.java`
+- `AuthorizationCodeTokenHandler.java`
+- `Constants.java`
+- `init.xml` with the following Synapse logic:
 
 ```xml
-<property name="Authorization" expression="fn:concat('Bearer ', get-property('uri.var.id_token'))" scope="transport"/>
+<property name="Authorization" expression="fn:concat('Bearer ', get-property('uri.var.access_token'))" scope="transport"/>
 ```
 
+Properties to be entered by the user:
+¬
+| Property          | Description                                | Required |
+|-------------------|--------------------------------------------|----------|
+| clientId          | Client ID of the registered application    | Yes      |
+| clientSecret      | Client secret of the registered application| Yes      |
+| tokenEndpoint     | Token endpoint URL                         | Yes      |
+| authorizationCode | Authorization code                         | Yes      |
+| redirectUri       | Redirect URI                               | Yes      |
+| scope             | Scope of the resources                     | No       |
+
+If none of these authentication mechanisms are specified, there will be no authentication, and direct HTTP requests will be sent for operations.
 
 #### 2.1.1 Parameters
 
