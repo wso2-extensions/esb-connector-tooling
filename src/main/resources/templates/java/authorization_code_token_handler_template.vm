@@ -1,0 +1,96 @@
+package org.wso2.carbon.petstoreconnector;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.util.EntityUtils;
+import org.apache.synapse.MessageContext;
+import org.wso2.carbon.connector.core.AbstractConnector;
+import org.wso2.carbon.connector.core.ConnectException;
+import org.wso2.carbon.connector.core.util.ConnectorUtils;
+
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public class AuthorizationCodeTokenHandler extends AbstractConnector {
+
+    private static final Log log = LogFactory.getLog(AuthorizationCodeTokenHandler.class);
+    private static final JsonParser parser = new JsonParser();
+
+    @Override
+    public void connect(MessageContext messageContext) throws ConnectException {
+        String clientId = (String) getParameter(messageContext, Constants.CLIENT_ID);
+        String clientSecret = (String) getParameter(messageContext, Constants.CLIENT_SECRET);
+        String tokenEndpoint = (String) getParameter(messageContext, Constants.TOKEN_ENDPOINT);
+        String redirectUri = (String) getParameter(messageContext, Constants.REDIRECT_URI);
+        String authorizationCode = (String) getParameter(messageContext, Constants.AUTHORIZATION_CODE);
+        String scope = (String) getParameter(messageContext, Constants.SCOPE);
+
+        if (StringUtils.isBlank(clientId) || StringUtils.isBlank(clientSecret)
+                || StringUtils.isBlank(tokenEndpoint) || StringUtils.isBlank(redirectUri)
+                || StringUtils.isBlank(authorizationCode)) {
+            handleException("Missing mandatory parameters for Authorization Code flow.", messageContext);
+        }
+
+        Map<String, String> payloadParametersMap = Map.of(
+                "grant_type", Constants.OAuth2.AUTHORIZATION_CODE,
+                "code", authorizationCode,
+                "redirect_uri", redirectUri,
+                "scope", scope==null?"":scope
+        );
+        log.debug("Requesting access token with authorization code grant type.");
+        Token token = getAccessToken(messageContext, payloadParametersMap, tokenEndpoint, clientId, clientSecret);
+        messageContext.setProperty(Constants.PROPERTY_ACCESS_TOKEN, token.getAccessToken());
+    }
+
+    private Token getAccessToken(MessageContext messageContext, Map<String, String> payloadParametersMap,
+                                 String tokenEndpoint, String clientId, String clientSecret) {
+        HttpPost postRequest = new HttpPost(tokenEndpoint);
+        postRequest.setHeader("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
+        postRequest.setHeader("Authorization", "Basic " + Utils.encode(clientId + ":" + clientSecret));
+
+        List<NameValuePair> parameters = new ArrayList<>();
+        payloadParametersMap.forEach((key, value) ->
+                parameters.add(new BasicNameValuePair(key, value))
+        );
+
+        try {
+            postRequest.setEntity(new UrlEncodedFormEntity(parameters));
+
+            try (CloseableHttpClient httpClient = HttpClients.createDefault();
+                 CloseableHttpResponse response = httpClient.execute(postRequest)) {
+                HttpEntity responseEntity = response.getEntity();
+                int responseStatus = response.getStatusLine().getStatusCode();
+                String respMessage = EntityUtils.toString(responseEntity);
+
+                if (responseStatus == HttpURLConnection.HTTP_OK) {
+                    JsonObject jsonObject = parser.parse(respMessage).getAsJsonObject();
+                    String accessToken = jsonObject.get("access_token").getAsString();
+                    long expiresIn = jsonObject.get("expires_in").getAsLong();
+                    return new Token(accessToken, System.currentTimeMillis(), expiresIn * 1000);
+                } else {
+                    handleException("Failed to retrieve access token. Response: " + respMessage, messageContext);
+                }
+            }
+        } catch (UnsupportedEncodingException e) {
+            handleException("Error preparing token request payload.", messageContext);
+        } catch (Exception e) {
+            handleException("Error occurred while retrieving access token.", messageContext);
+        }
+        return null;
+    }
+}

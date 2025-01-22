@@ -162,13 +162,15 @@ public class ProjectGeneratorUtils {
         }
         // Determine the template based on the auth type
         String auth = (String) context.get("auth");
+        String oauth2flow = (String) context.get("oauth2flow");
         String outputFile;
         String template;
-        if (auth.equalsIgnoreCase("oauth2")) {
+        if (auth.equalsIgnoreCase("oauth2") && oauth2flow.equalsIgnoreCase("client_credentials")) {
             String[][] oauth2Templates = {
                     {"templates/java/in_memory_token_store_template.vm", "/InMemoryTokenStore.java"},
                     {"templates/java/token_store_template.vm", "/TokenStore.java"},
-                    {"templates/java/token_handler_template.vm", "/TokenHandler.java"},
+                    {"templates/java/client_credentials_token_handler_template.vm", "/ClientCredentialsTokenHandler" +
+                            ".java"},
                     {"templates/java/token_manager_template.vm", "/TokenManager.java"},
                     {"templates/java/token_template.vm", "/Token.java"},
                     {"templates/java/constants_template.vm", "/Constants.java"}
@@ -179,11 +181,27 @@ public class ProjectGeneratorUtils {
                 outputFile = pathToMainDir + entry[1];
                 mergeVelocityTemplate(outputFile, template);
             }
-            template = "templates/auth/init_oauth2_template.vm";
+            template = "templates/auth/init_oauth2_client_credentials_template.vm";
+        } else if (auth.equalsIgnoreCase("oauth2") && oauth2flow.equalsIgnoreCase("authorization_code")) {
+            String[][] oauth2AuthCodeTemplates = {
+                    {"templates/java/in_memory_token_store_template.vm", "/InMemoryTokenStore.java"},
+                    {"templates/java/token_store_template.vm", "/TokenStore.java"},
+                    {"templates/java/token_manager_template.vm", "/TokenManager.java"},
+                    {"templates/java/token_template.vm", "/Token.java"},
+                    {"templates/java/constants_template.vm", "/Constants.java"},
+                    {"templates/java/authorization_code_token_handler_template.vm", "/AuthorizationCodeTokenHandler.java"}
+            };
+
+            for (String[] entry : oauth2AuthCodeTemplates) {
+                template = entry[0];
+                outputFile = pathToMainDir + entry[1];
+                mergeVelocityTemplate(outputFile, template);
+            }
+            template = "templates/auth/init_oauth2_authorization_code_template.vm";
         } else if (auth.equalsIgnoreCase("basic")) {
             template = "templates/auth/init_basic_auth_template.vm";
         } else if (auth.equalsIgnoreCase("apiKey")) {
-            template = "templates/auth/init_api_key_auth_template.vm";
+            template = "templates/auth/init_api_key_template.vm";
         } else {
             template = "templates/auth/init_no_auth_template.vm";
         }
@@ -237,6 +255,8 @@ public class ProjectGeneratorUtils {
         String oAuth2Flow = (String) context.get("oauth2flow");
         if (auth.equalsIgnoreCase("oauth2") && oAuth2Flow.equalsIgnoreCase("client_credentials")) {
             generateOAuth2Files(pathToResourcesDir);
+        } else if (auth.equalsIgnoreCase("oauth2") && oAuth2Flow.equalsIgnoreCase("authorization_code")) {
+            generateOAuth2AuthorizationCodeFiles(pathToResourcesDir);
         } else if (auth.equalsIgnoreCase("basic")) {
             generateBasicAuthFiles(pathToResourcesDir);
         } else if (auth.equalsIgnoreCase("apiKey")) {
@@ -261,7 +281,7 @@ public class ProjectGeneratorUtils {
 
     private static void generateOAuth2Files(String pathToResourcesDir) throws IOException {
         String outputFile = pathToResourcesDir + "/uischema/init.json";
-        String template = "templates/uischema/init_oauth2_template.vm";
+        String template = "templates/uischema/init_oauth2_client_credentials_template.vm";
         mergeVelocityTemplate(outputFile, template);
     }
 
@@ -294,6 +314,12 @@ public class ProjectGeneratorUtils {
     private static void generateApiKeyAuthFiles(String pathToResourcesDir) throws IOException {
         String outputFile = pathToResourcesDir + "/uischema/init.json";
         String template = "templates/uischema/init_api_key_auth_template.vm";
+        mergeVelocityTemplate(outputFile, template);
+    }
+
+    private static void generateOAuth2AuthorizationCodeFiles(String pathToResourcesDir) throws IOException {
+        String outputFile = pathToResourcesDir + "/uischema/init.json";
+        String template = "templates/uischema/init_oauth2_authorization_code_template.vm";
         mergeVelocityTemplate(outputFile, template);
     }
 
@@ -582,6 +608,9 @@ public class ProjectGeneratorUtils {
                 if (openAPI.getComponents().getSecuritySchemes().get("oauth2").getFlows().getClientCredentials() != null) {
                     context.put("auth", "oauth2");
                     context.put("oauth2flow", "client_credentials");
+                } else if (openAPI.getComponents().getSecuritySchemes().get("oauth2").getFlows().getAuthorizationCode() != null) {
+                    context.put("auth", "oauth2");
+                    context.put("oauth2flow", "authorization_code");
                 } else {
                     context.put("auth", "noauth");
                 }
@@ -589,6 +618,8 @@ public class ProjectGeneratorUtils {
                 context.put("auth", "basic");
             } else if (openAPI.getComponents().getSecuritySchemes().containsKey("apiKey")) {
                 context.put("auth", "apiKey");
+                context.put("apiKeyName", openAPI.getComponents().getSecuritySchemes().get("apiKey").getName());
+                context.put("apiKeyIn", openAPI.getComponents().getSecuritySchemes().get("apiKey").getIn());
             } else {
                 context.put("auth", "noauth");
             }

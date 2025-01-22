@@ -66,8 +66,8 @@ public class Utils {
      */
     public static void setErrorPropertiesToMessage(MessageContext messageContext, String errorCode, String errorMessage) {
 
-        messageContext.setProperty(Constants.PROPERTY_ERROR_CODE, errorCode);
-        messageContext.setProperty(Constants.PROPERTY_ERROR_MESSAGE, errorMessage);
+        messageContext.setProperty("ERROR_CODE", errorCode);
+        messageContext.setProperty("ERROR_MESSAGE", errorMessage);
     }
 
     /**

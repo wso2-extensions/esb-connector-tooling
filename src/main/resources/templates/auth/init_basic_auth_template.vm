@@ -33,6 +33,5 @@
 		<header name="Authorization"
 				expression="fn:concat('Basic ', base64Encode(fn:concat($func:username,':',$func:password)))"
 				scope="transport"/>
-		<class name="org.wso2.carbon.${connectorName}connector.URLBuilderUtil"/>
 	</sequence>
 </template>

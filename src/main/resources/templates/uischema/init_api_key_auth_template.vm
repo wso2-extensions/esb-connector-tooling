@@ -32,7 +32,7 @@
                               "name":"base",
                               "displayName":"Base URL",
                               "inputType":"stringOrExpression",
-                              "defaultValue":"$defaultUrl",
+                              "defaultValue":"${defaultUrl}",
                               "required":"true",
                               "helpTip":"The service root URL."
                            }
@@ -61,7 +61,7 @@
                            "value":{
                               "name":"blocking",
                               "displayName":"Use Blocking Transport",
-                              "inputType":"combo",
+                              "inputType":"stringOrExpression",
                               "defaultValue":"false",
                               "required":"true",
                               "helpTip":"Indicates whether the operation should be executed using blocking transport."

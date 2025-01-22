@@ -29,9 +29,10 @@
 				<property name="uri.var.base" expression="$func:base"/>
 			</else>
 		</filter>
-		<header name="Authorization"
-				expression="fn:concat('Bearer ', $func:apiKey)"
-				scope="transport"/>
-		<class name="org.wso2.carbon.${connectorName}connector.URLBuilderUtil"/>
+		#if ($apiKeyIn == "header")
+        <header name="$apiKeyName" expression="$func:apiKey" scope="transport"/>
+        #elseif ($apiKeyIn == "query")
+        <property name="uri.var.${apiKeyName}" expression="$func:apiKey" scope="transport"/>
+        #end
 	</sequence>
 </template>
