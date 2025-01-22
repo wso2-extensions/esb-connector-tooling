@@ -67,7 +67,6 @@ components:
 ```
 
 Generated files:
-- `ApiKeyAuthHandler.java`
 - `init.xml` with the following Synapse logic:
 
 ```xml
