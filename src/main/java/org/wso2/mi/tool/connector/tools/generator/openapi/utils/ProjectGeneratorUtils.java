@@ -639,6 +639,7 @@ public class ProjectGeneratorUtils {
         context.put("version", "1.0.0");
         context.put("groupId", "org.wso2.mi.connector");
         context.put("connectorName", resolvedConnectorName);
+        context.put("defaultUrl", openAPI.getServers().get(0).getUrl());
         return context;
     }
     private static String makePackageNameCompatible(String name) {
