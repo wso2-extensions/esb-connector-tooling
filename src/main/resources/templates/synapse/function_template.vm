@@ -1,0 +1,167 @@
+#set ( $ds = '$' )
+#set ( $hash = '#' )
+#set ( $ocb = '{' )
+#set ( $ccb = '}' )
+#set ( $col = ':' )
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ ~  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ ~
+ ~  WSO2 LLC. licenses this file to you under the Apache License,
+ ~  Version 2.0 (the "License"); you may not use this file except
+ ~  in compliance with the License.
+ ~  You may obtain a copy of the License at
+ ~
+ ~    http://www.apache.org/licenses/LICENSE-2.0
+ ~
+ ~  Unless required by applicable law or agreed to in writing,
+ ~  software distributed under the License is distributed on an
+ ~  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ ~  KIND, either express or implied.  See the License for the
+ ~  specific language governing permissions and limitations
+ ~  under the License.
+-->
+
+<!-- Generated on $timestamp -->
+
+<template xmlns="http://ws.apache.org/ns/synapse" name="$operation.getName()">
+    #set($pathParameterList = "")
+    #if ($operation.getPathParameters().size() > 0)
+        <!-- Path Parameter List -->
+        #foreach ($param in $operation.getPathParameters())
+            <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
+            #set($pathParameterList = "$pathParameterList$param.getParameterName(),")
+        #end
+    #end
+    #set($queryParameterList = "")
+    #if ($operation.getQueryParameters().size() > 0)
+        <!-- Query Parameter List -->
+        #foreach ($param in $operation.getQueryParameters())
+            <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
+            #set($queryParameterList = "$queryParameterList$param.getParameterName(),")
+        #end
+    #end
+    #if ($operation.getHeaderParameters().size() > 0)
+        <!-- Header Parameter List -->
+        #foreach ($param in $operation.getHeaderParameters())
+            <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
+        #end
+    #end
+    #if ($operation.getRequestParameters().size() > 0)
+        <!-- Request Body Parameter List -->
+        #foreach ($param in $operation.getRequestParameters())
+            <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
+        #end
+    #end
+    #if ($operation.getCookieParameters().size() > 0)
+        <!-- Cookie Parameter List -->
+        #foreach ($param in $operation.getCookieParameters())
+            <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
+        #end
+    #end
+    <parameter name="responseVariable" description="The name of the variable to which the response should be stored."/>
+    <parameter name="overwriteBody" description="Replace the Message Body in Message Context with the response of the operation."/>
+    <sequence>
+        <class name="org.wso2.carbon.${connectorName}connector.RestURLBuilder">
+            <property name="operationPath" value="$operation.getPath()"/>
+            #if ($pathParameterList != "")
+                <property name="pathParameters" value="$pathParameterList"/>
+            #end
+            #if ($queryParameterList != "")
+            <property name="queryParameters" value="$queryParameterList"/>
+            #end
+        </class>
+        #if ($contentType)
+            #if ($operation.getRequestParameters().size() > 0)
+                #if ($contentType == "application/json")
+                    <payloadFactory media-type="json" template-type="freemarker">
+                        <format>
+                            <![CDATA[{
+                            <${hash}assign hasPrevious = false>
+                            #set($count = 1)
+                            #foreach ($parameter in $operation.getRequestParameters())
+                                <${hash}if (args.arg${count})?has_content>#if($count > 1)<${hash}if hasPrevious>,</${hash}if>#end"$parameter.getName()":#if ($parameter.getJsonDescription() == " Type: integer" || $parameter.getJsonDescription() == " Type: boolean")${ds}${ocb}args.arg${count}${ccb}#else"${ds}${ocb}args.arg${count}${ccb}"#end#if($count < $operation.getRequestParameters().size())<${hash}assign hasPrevious = true>#end</${hash}if>
+                                #set($count = $count + 1)
+                            #end
+                            }]]>
+                        </format>
+                        <args>
+                            #foreach ($parameter in $operation.getRequestParameters())
+                                <arg evaluator="xml" expression="$func:$parameter.getParameterName()"/>
+                            #end
+                        </args>
+                    </payloadFactory>
+                #elseif ($contentType == "application/xml")
+                    <payloadFactory media-type="xml" template-type="freemarker">
+                        <format>
+                            <![CDATA[<${root}>
+                                #set($count = 1)
+                                #foreach ($parameter in $operation.getRequestParameters())
+                                    <${hash}if (args.arg${count})?has_content>
+                                        <${parameter.getName()}>${ds}${ocb}args.arg${count}${ccb}</${parameter.getName()}>
+                                    </${hash}if>
+                                    #set($count = $count + 1)
+                                #end
+                            </${root}>]]>
+                        </format>
+                        <args>
+                            #foreach ($parameter in $operation.getRequestParameters())
+                                <arg evaluator="xml" expression="$func:$parameter.getParameterName()"/>
+                            #end
+                        </args>
+                    </payloadFactory>
+                #else
+                    <payloadFactory media-type="xml" template-type="freemarker">
+                        <format>
+                            <![CDATA[<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
+                                <soapenv:Header></soapenv:Header>
+                                <soapenv:Body>
+                                    <root>
+                                        #set($count = 1)
+                                        #foreach ($parameter in $operation.getRequestParameters())
+                                            <${hash}if (args.arg${count})?has_content>
+                                                <${parameter.getName()}>${ds}${ocb}args.arg${count}${ccb}</${parameter.getName()}>
+                                            </${hash}if>
+                                            #set($count = $count + 1)
+                                        #end
+                                    </root>
+                                </soapenv:Body>
+                            </soapenv:Envelope>]]>
+                        </format>
+                        <args>
+                            #foreach ($parameter in $operation.getRequestParameters())
+                                <arg evaluator="xml" expression="$func:$parameter.getParameterName()"/>
+                            #end
+                        </args>
+                    </payloadFactory>
+                #end
+                <property name="DISABLE_CHUNKING" scope="axis2" type="STRING" value="true"/>
+            #end
+            <property name="messageType" value="$contentType" scope="axis2"/>
+            <property name="ContentType" value="$contentType" scope="axis2"/>
+        #end
+        #if ($accept)
+            <header name="Accept" value="$accept" scope="transport" action="set"/>
+        #end
+        #foreach ($param in $operation.getHeaderParameters())
+            <property name="$param.getName()" value="$func:$param.getParameterName()" scope="transport" action="set"/>
+        #end
+        #foreach ($param in $operation.getCookieParameters())
+            <property name="$param.getName()" value="$func:$param.getParameterName()" scope="transport"/>
+        #end
+        <call>
+            <endpoint>
+                <http method="$httpMethod" uri-template="{uri.var.base}{+uri.var.urlPath}{+uri.var.urlQuery}">
+                #if ($auth == "basic")
+                    <authentication>
+                        <basicAuth>
+                            <username>$func:$operation.getUsername()</username>
+                            <password>$func:$operation.getPassword()</password>
+                        </basicAuth>
+                    </authentication>
+                #end
+                </http>
+            </endpoint>
+        </call>
+    </sequence>
+</template>

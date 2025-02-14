@@ -1,0 +1,143 @@
+{
+   "connectorName":"$connectorName",
+   "connectionName":"$connectorName",
+   "title":"$connectorName connection",
+   "help":"$connectorName connection",
+   "elements":[
+      {
+         "type":"attributeGroup",
+         "value":{
+            "groupName":"General",
+            "elements":[
+               {
+                  "type":"attribute",
+                  "value":{
+                     "name":"connectionName",
+                     "displayName":"Connection Name",
+                     "inputType":"string",
+                     "defaultValue":"${connectorName}_CONNECTION",
+                     "required":"true",
+                     "helpTip":"The name for the $connectorName connection.",
+                     "validation":"nameWithoutSpecialCharactors"
+                  }
+               },
+               {
+                  "type":"attributeGroup",
+                  "value":{
+                     "groupName":"Basic",
+                     "elements":[
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"base",
+                              "displayName":"Base URL",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"$defaultUrl",
+                              "required":"true",
+                              "helpTip":"The service root URL."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"clientId",
+                              "displayName":"Client ID",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"true",
+                              "helpTip":"Client ID of the registered application."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"clientSecret",
+                              "displayName":"Client Secret",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"true",
+                              "helpTip":"Client secret of the registered application."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"tokenEndpoint",
+                              "displayName":"Token URL",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"true",
+                              "helpTip":"The URL from which the access token can be obtained."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"authorizationCode",
+                              "displayName":"Authorization Code",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"true",
+                              "helpTip":"The authorization code that will be used to obtain an access token."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"redirectUri",
+                              "displayName":"Redirect URI",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"true",
+                              "helpTip":"The URL to which the authorization server will send the user-agent back once access is granted (or denied)."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"scope",
+                              "displayName":"Scope",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"false",
+                              "helpTip":"The scope of the resources that will be accessed."
+                           }
+                        },
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"state",
+                              "displayName":"State",
+                              "inputType":"stringOrExpression",
+                              "defaultValue":"",
+                              "required":"false",
+                              "helpTip":"An opaque value used to maintain state between the request and the callback."
+                           }
+                        }
+                     ]
+                  }
+               },
+               {
+                  "type":"attributeGroup",
+                  "value":{
+                     "groupName":"Advanced",
+                     "elements":[
+                        {
+                           "type":"attribute",
+                           "value":{
+                              "name":"blocking",
+                              "displayName":"Use Blocking Transport",
+                              "inputType":"combo",
+                              "defaultValue":"false",
+                              "required":"true",
+                              "helpTip":"Indicates whether the operation should be executed using blocking transport."
+                           }
+                        }
+                     ]
+                  }
+               }
+            ]
+         }
+      }
+   ]
+}
