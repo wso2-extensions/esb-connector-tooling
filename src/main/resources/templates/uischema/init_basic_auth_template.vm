@@ -39,7 +39,7 @@
                                         "name" : "base",
                                         "displayName" : "Base URL",
                                         "inputType" : "stringOrExpression",
-                                        "defaultValue" : "",
+                                        "defaultValue" : "$defaultUrl",
                                         "required" : "true",
                                         "helpTip" : "The service root URL."
                                     }

@@ -636,6 +636,12 @@ public class ProjectGeneratorUtils {
             context.put("auth", "noauth");
         }
 
+        if (openAPI.getServers() != null && !openAPI.getServers().isEmpty() && openAPI.getServers().get(0) != null) {
+            context.put("defaultUrl", openAPI.getServers().get(0).getUrl());
+        } else {
+            context.put("defaultUrl", "");
+        }
+
         context.put("version", "1.0.0");
         context.put("groupId", "org.wso2.mi.connector");
         context.put("connectorName", resolvedConnectorName);
