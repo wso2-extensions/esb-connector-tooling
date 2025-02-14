@@ -96,7 +96,9 @@ public class ProjectGeneratorUtils {
                 String pathToResourcesDir = pathToConnectorDir + "/src/main/resources";
                 createConnectorDirectory(pathToConnectorDir, pathToMainDir, pathToResourcesDir, connectorName);
                 copyConnectorStaticFiles(pathToConnectorDir, pathToResourcesDir, pathToMainDir);
-                componentsSchema = openAPI.getComponents().getSchemas();
+                if (openAPI.getComponents() != null) {
+                    componentsSchema = openAPI.getComponents().getSchemas();
+                }
                 readOpenAPISpecification(openAPI, pathToResourcesDir);
                 operationList.sort(Comparator.comparing(Operation::getName));
                 context.put("operations", operationList);
