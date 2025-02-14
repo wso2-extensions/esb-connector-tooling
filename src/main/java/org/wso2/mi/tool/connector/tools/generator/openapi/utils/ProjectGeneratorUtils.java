@@ -57,6 +57,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
 
 /**
  * The VelocityConfigGenerator handles the generation of the openapi connector
@@ -93,8 +94,7 @@ public class ProjectGeneratorUtils {
                 String pathToMainDir = pathToConnectorDir +
                         "/src/main/java/org/wso2/carbon/" + connectorName + "connector";
                 String pathToResourcesDir = pathToConnectorDir + "/src/main/resources";
-                createConnectorDirectory(pathToConnectorDir, pathToMainDir, pathToResourcesDir,
-                        context.get("connectorName").toString());
+                createConnectorDirectory(pathToConnectorDir, pathToMainDir, pathToResourcesDir, connectorName);
                 copyConnectorStaticFiles(pathToConnectorDir, pathToResourcesDir, pathToMainDir);
                 componentsSchema = openAPI.getComponents().getSchemas();
                 readOpenAPISpecification(openAPI, pathToResourcesDir);
@@ -558,8 +558,15 @@ public class ProjectGeneratorUtils {
             Map<String, Schema> properties = schema.getProperties();
             if (properties != null) {
                 for (Map.Entry<String, Schema> property : properties.entrySet()) {
-                    String propName = property.getValue().getXml() != null ? property.getValue().getXml().getName() :
-                            property.getKey();
+                    String propName;
+                    if (property.getValue() != null && property.getValue().getXml() != null
+                            && property.getValue().getXml().getName() != null) {
+                        propName = property.getValue().getXml().getName();
+                    } else if (property.getKey() != null) {
+                        propName = property.getKey();
+                    } else {
+                        propName = "unknown_property_" + UUID.randomUUID().toString();
+                    }
                     String propDescription = property.getValue().getDescription() != null ?
                             property.getValue().getDescription() + " Type: " + property.getValue().getType() :
                             " Type: " + property.getValue().getType();
@@ -593,7 +600,7 @@ public class ProjectGeneratorUtils {
     private static VelocityContext createVelocityContext(OpenAPI openAPI) {
         context = new VelocityContext();
         initVelocityEngine();
-        String connectorName = openAPI.getInfo().getTitle();
+        String connectorName = makePackageNameCompatible(openAPI.getInfo().getTitle());
         if (StringUtils.isEmpty(connectorName)) {
             connectorName = "MIConnector";
         }
@@ -632,4 +639,8 @@ public class ProjectGeneratorUtils {
         context.put("connectorName", resolvedConnectorName);
         return context;
     }
+    private static String makePackageNameCompatible(String name) {
+        return name.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+    }
+    
 }
