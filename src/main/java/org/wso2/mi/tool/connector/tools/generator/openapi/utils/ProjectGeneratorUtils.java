@@ -95,9 +95,9 @@ public class ProjectGeneratorUtils {
                         "/src/main/java/org/wso2/carbon/" + connectorName + "connector";
                 String pathToResourcesDir = pathToConnectorDir + "/src/main/resources";
                 createConnectorDirectory(pathToConnectorDir, pathToMainDir, pathToResourcesDir, connectorName);
-                context.put("hasResponseModel", false);
+                context.put(Constants.HAS_RESPONSE_MODEL, false);
                 if (miVersion != null && miVersion.compareTo("4.4.0") >= 0) {
-                    context.put("hasResponseModel", true);
+                    context.put(Constants.HAS_RESPONSE_MODEL, true);
                 }
                 copyConnectorStaticFiles(pathToConnectorDir, pathToResourcesDir, pathToMainDir);
                 if (openAPI.getComponents() != null) {
@@ -139,7 +139,7 @@ public class ProjectGeneratorUtils {
         Files.createDirectories(Paths.get(pathToResourcesDir + "/functions"));
         Files.createDirectories(Paths.get(pathToResourcesDir + "/icon"));
         Files.createDirectories(Paths.get(pathToResourcesDir + "/uischema"));
-        if ("true".equals(String.valueOf(context.get("hasResponseModel")))) {
+        if ("true".equals(String.valueOf(context.get(Constants.HAS_RESPONSE_MODEL)))) {
             Files.createDirectories(Paths.get(pathToResourcesDir + "/outputschema"));
         }
         
@@ -552,7 +552,7 @@ public class ProjectGeneratorUtils {
         String uischemaFileName = pathToResourcesDir + "/uischema/" + operationName + ".json";
         mergeVelocityTemplate(synapseFileName, "templates/synapse/function_template.vm");
         mergeVelocityTemplate(uischemaFileName, "templates/uischema/operation_template.vm");
-        if (context.get("hasResponseModel").equals("true")) {
+        if (context.get(Constants.HAS_RESPONSE_MODEL).equals("true")) {
             String outputSchemaFileName = pathToResourcesDir + "/outputschema/" + operationName + ".json";
             mergeVelocityTemplate(outputSchemaFileName, "templates/outputschema/operation_response_schema_template.vm");
         }

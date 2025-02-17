@@ -36,10 +36,7 @@ public class ConnectorGenerator {
         }
         String openApiSpec = args[0];
         String outputDir = args[1];
-        String miVersion = null;
-        if (args.length == 3) {
-            miVersion = args[2];
-        }
+        String miVersion = args.length == 3 ? args[2] : "4.4.0";
 
         generateConnector(openApiSpec, outputDir, miVersion);
     }
@@ -51,15 +48,27 @@ public class ConnectorGenerator {
      * @param outputDir The output directory.
      * @return The path to the generated connector.
      */
-    // Add miVersion default value to 4.4.0
+    public static String generateConnector(String openApiSpec, String outputDir) {
+        return generateConnector(openApiSpec, outputDir, "4.3.0");
+    }
+
+    /**
+     * Generates the connector using the OpenAPI spec.
+     *
+     * @param openApiSpec The OpenAPI spec.
+     * @param outputDir The output directory.
+     * @param miVersion The MI version (default is 4.4.0 if not provided).
+     * @return The path to the generated connector.
+     */
     public static String generateConnector(String openApiSpec, String outputDir, String miVersion) {
-        if (miVersion == null) {
-            miVersion = "4.4.0";
-        }
+        return generateConnectorInternal(openApiSpec, outputDir, miVersion);
+    }
+
+    private static String generateConnectorInternal(String openApiSpec, String outputDir, String miVersion) {
         String connectorPath;
         try {
             String connectorProjectDir = ProjectGeneratorUtils.generateConnectorProject(openApiSpec, outputDir, miVersion);
-            connectorPath =  ConnectorBuilderUtils.buildConnector(connectorProjectDir);
+            connectorPath = ConnectorBuilderUtils.buildConnector(connectorProjectDir);
         } catch (ConnectorGenException e) {
             throw new RuntimeException("Error occurred while generating the connector", e);
         }
