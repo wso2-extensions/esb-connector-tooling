@@ -58,7 +58,7 @@ public class ConnectorGenerator {
         }
         String connectorPath;
         try {
-            String connectorProjectDir = ProjectGeneratorUtils.generateConnectorProject(openApiSpec, outputDir,miVersion);
+            String connectorProjectDir = ProjectGeneratorUtils.generateConnectorProject(openApiSpec, outputDir, miVersion);
             connectorPath =  ConnectorBuilderUtils.buildConnector(connectorProjectDir);
         } catch (ConnectorGenException e) {
             throw new RuntimeException("Error occurred while generating the connector", e);
