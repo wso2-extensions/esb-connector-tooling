@@ -11,7 +11,7 @@
             "type": "object",
             "description": "Payload of the API response.",
             "additionalProperties": true
-        }
+        },
       #end
       "attributes": {
         "type": "object",

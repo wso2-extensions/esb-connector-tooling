@@ -26,11 +26,11 @@ public class ConnectorBuilderUtils {
     private static final Log log = LogFactory.getLog(ConnectorBuilderUtils.class);
     private static final Invoker invoker = new DefaultInvoker();;
 
-    public String build(String openAPISpecPath, String projectPath) {
+    public String build(String openAPISpecPath, String projectPath, String miVersion) {
         String connectorPath = null;
         try {
             ProjectGeneratorUtils connectorProjectGenerator = new ProjectGeneratorUtils();
-            String connectorProjectPath = connectorProjectGenerator.generateConnectorProject(openAPISpecPath, projectPath);
+            String connectorProjectPath = connectorProjectGenerator.generateConnectorProject(openAPISpecPath, projectPath, miVersion);
             connectorPath = buildConnector(connectorProjectPath);
         } catch (ConnectorGenException e) {
             log.error("Error occurred while building the connector.", e);
