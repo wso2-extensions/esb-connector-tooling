@@ -26,19 +26,6 @@ public class ConnectorBuilderUtils {
     private static final Log log = LogFactory.getLog(ConnectorBuilderUtils.class);
     private static final Invoker invoker = new DefaultInvoker();;
 
-    public String build(String openAPISpecPath, String projectPath, String miVersion) {
-        String connectorPath = null;
-        try {
-            ProjectGeneratorUtils connectorProjectGenerator = new ProjectGeneratorUtils();
-            String connectorProjectPath = connectorProjectGenerator.generateConnectorProject(openAPISpecPath, projectPath, miVersion);
-            connectorPath = buildConnector(connectorProjectPath);
-        } catch (ConnectorGenException e) {
-            log.error("Error occurred while building the connector.", e);
-        }
-        return connectorPath;
-    }
-
-
     /**
      * Builds the connector using Maven.
      *
@@ -46,19 +33,29 @@ public class ConnectorBuilderUtils {
      * @return True if the connector is built successfully, false otherwise.
      */
     public static String buildConnector(String projectPath) {
-
         Path pomPath = Paths.get(projectPath, "pom.xml");
         InvocationRequest request = createBaseRequest(pomPath);
         request.setGoals(Collections.singletonList(Constants.MAVEN_GOALS));
+
+        File mvnwFile = new File(projectPath, System.getProperty("os.name").toLowerCase().contains("win") ? "mvnw.cmd" : "mvnw");
+        boolean useMavenWrapper = mvnwFile.exists() && mvnwFile.canExecute();
+
         try {
-            String mavenHome = getMavenHome();
-            invoker.setMavenHome(new File(mavenHome));
+            if (useMavenWrapper) {
+                log.info("Using Maven Wrapper for build.");
+                invoker.setMavenExecutable(mvnwFile);
+            } else {
+                log.info("Maven Wrapper not found. Falling back to system Maven.");
+                String mavenHome = getMavenHome();
+                invoker.setMavenHome(new File(mavenHome));
+            }
             invoker.execute(request);
         } catch (Exception e) {
             log.error("Error occurred while building the connector.", e);
             return null;
         }
-        // check target directory contains zip
+
+        // Check if the target directory contains a ZIP file
         File targetDir = new File(projectPath + File.separator + "target");
         File[] files = targetDir.listFiles();
         if (files != null) {
