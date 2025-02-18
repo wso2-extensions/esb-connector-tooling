@@ -119,6 +119,7 @@
                         }
                     }
                     #end
+                    #if ($hasResponseModel==true)
                     ,{
                         "type":"attributeGroup",
                         "value":{
@@ -149,6 +150,7 @@
                             ]
                         }
                     }
+                    #end
                 ]
             }
         }
