@@ -31,12 +31,14 @@ public class ConnectorGenerator {
      * @param args The arguments.
      */
     public static void main(String[] args) {
-        if (args.length != 2) {
-            throw new IllegalArgumentException("Usage: <openapi-spec> <output-dir>");
+        if (args.length < 2 || args.length > 3) {
+            throw new IllegalArgumentException("Usage: <openApiSpec> <outputDir> [miVersion]");
         }
         String openApiSpec = args[0];
         String outputDir = args[1];
-        generateConnector(openApiSpec, outputDir);
+        String miVersion = args.length == 3 ? args[2] : "4.4.0";
+
+        generateConnector(openApiSpec, outputDir, miVersion);
     }
 
     /**
@@ -47,10 +49,26 @@ public class ConnectorGenerator {
      * @return The path to the generated connector.
      */
     public static String generateConnector(String openApiSpec, String outputDir) {
+        return generateConnector(openApiSpec, outputDir, "4.3.0");
+    }
+
+    /**
+     * Generates the connector using the OpenAPI spec.
+     *
+     * @param openApiSpec The OpenAPI spec.
+     * @param outputDir The output directory.
+     * @param miVersion The MI version (default is 4.4.0 if not provided).
+     * @return The path to the generated connector.
+     */
+    public static String generateConnector(String openApiSpec, String outputDir, String miVersion) {
+        return generateConnectorInternal(openApiSpec, outputDir, miVersion);
+    }
+
+    private static String generateConnectorInternal(String openApiSpec, String outputDir, String miVersion) {
         String connectorPath;
         try {
-            String connectorProjectDir = ProjectGeneratorUtils.generateConnectorProject(openApiSpec, outputDir);
-            connectorPath =  ConnectorBuilderUtils.buildConnector(connectorProjectDir);
+            String connectorProjectDir = ProjectGeneratorUtils.generateConnectorProject(openApiSpec, outputDir, miVersion);
+            connectorPath = ConnectorBuilderUtils.buildConnector(connectorProjectDir);
         } catch (ConnectorGenException e) {
             throw new RuntimeException("Error occurred while generating the connector", e);
         }

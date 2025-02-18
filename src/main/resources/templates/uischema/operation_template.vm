@@ -119,16 +119,17 @@
                         }
                     }
                     #end
+                    #if ($hasResponseModel==true)
                     ,{
                         "type":"attributeGroup",
                         "value":{
-                            "groupName": "Response",
+                            "groupName": "Output",
                             "elements":[
                                 {
                                     "type":"attribute",
                                     "value":{
                                         "name": "responseVariable",
-                                        "displayName": "Target",
+                                        "displayName": "Output Variable Name",
                                         "inputType": "string",
                                         "deriveResponseVariable" : true,
                                         "required": "true",
@@ -142,13 +143,14 @@
                                         "displayName": "Replace Message Body",
                                         "inputType": "checkbox",
                                         "defaultValue": "false",
-                                        "helpTip": "Replace the Message Body in Message Context with the response of the operation.",
+                                        "helpTip": "Replace the Message Body in Message Context with the output of the operation (This will remove the payload from the above variable).",
                                         "required": "false"
                                     }
                                 }
                             ]
                         }
                     }
+                    #end
                 ]
             }
         }

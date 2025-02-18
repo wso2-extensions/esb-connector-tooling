@@ -34,4 +34,5 @@ public class Constants {
     public static final String OP_CONTENT_TYPE = "contentType";
     public static final String OS_WINDOWS = "windows";
     public static final String MAVEN_GOALS = "clean install";
+    public static final String HAS_RESPONSE_MODEL = "hasResponseModel";
 }

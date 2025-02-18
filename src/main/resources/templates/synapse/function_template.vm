@@ -59,8 +59,10 @@
             <parameter name="$param.getParameterName()" #if ($param.getXmlDescription()) description="$param.getXmlDescription()" #end/>
         #end
     #end
-    <parameter name="responseVariable" description="The name of the variable to which the response should be stored."/>
-    <parameter name="overwriteBody" description="Replace the Message Body in Message Context with the response of the operation."/>
+    #if ($hasResponseModel==true)
+        <parameter name="responseVariable" description="The name of the variable to which the response should be stored."/>
+        <parameter name="overwriteBody" description="Replace the Message Body in Message Context with the response of the operation."/>
+    #end
     <sequence>
         <class name="org.wso2.carbon.${connectorName}connector.RestURLBuilder">
             <property name="operationPath" value="$operation.getPath()"/>
