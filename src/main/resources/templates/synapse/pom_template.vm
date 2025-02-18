@@ -85,7 +85,7 @@
                         <id>build-connector</id>
                         <phase>compile</phase>
                         <goals>
-                            <goal>attached</goal>
+                            <goal>single</goal>
                         </goals>
                         <configuration>
                             <finalName>${connector.name}-${project.version}</finalName>
