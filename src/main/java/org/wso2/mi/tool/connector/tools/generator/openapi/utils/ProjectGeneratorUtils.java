@@ -73,8 +73,8 @@ public class ProjectGeneratorUtils {
     static VelocityContext context;
     static Map<String, Schema> componentsSchema;
 
-    public static String generateConnectorProject(String openAPISpecPath, String projectPath, String miVersion) throws
-            ConnectorGenException {
+    public static String generateConnectorProject(String openAPISpecPath, String projectPath, String miVersion,
+                                                  String integrationProjectPath) throws ConnectorGenException {
 
         String pathToConnectorDir = null;
         ParseOptions parseOptions = new ParseOptions();
@@ -109,6 +109,9 @@ public class ProjectGeneratorUtils {
                 context.put("parameterNameMap", parameterNameMap);
                 generateConnectorConfig(pathToConnectorDir, pathToResourcesDir, pathToMainDir);
                 copyGenResources(openAPISpecPath, pathToConnectorDir);
+                if (integrationProjectPath != null) {
+                    copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
+                }
             } else {
                 String errorMsg = "Couldn't parse OpenAPI specification.";
                 CodegenUtils.handleException(errorMsg);
@@ -658,6 +661,39 @@ public class ProjectGeneratorUtils {
     }
     private static String makePackageNameCompatible(String name) {
         return name.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
+    }
+
+    private static void copyMavenArtifacts(String pathToConnectorDir, String integrationProjectPath) throws IOException {
+        String[] wrapperFiles = {"mvnw", "mvnw.cmd", ".mvn"};
+
+        for (String fileName : wrapperFiles) {
+            File source = new File(integrationProjectPath, fileName);
+            File destination = new File(pathToConnectorDir, fileName);
+
+            if (source.exists()) {
+                if (source.isDirectory()) {
+                    copyDirectory(source.toPath(), destination.toPath());
+                } else {
+                    Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
+                log.info("Copied Maven wrapper artifact: " + fileName);
+            }
+        }
+    }
+
+    private static void copyDirectory(Path source, Path target) throws IOException {
+        Files.walk(source).forEach(srcPath -> {
+            Path destPath = target.resolve(source.relativize(srcPath));
+            try {
+                if (Files.isDirectory(srcPath)) {
+                    Files.createDirectories(destPath);
+                } else {
+                    Files.copy(srcPath, destPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } catch (IOException e) {
+                log.error("Error occurred while copying directory: " + e.getMessage());
+            }
+        });
     }
     
 }
