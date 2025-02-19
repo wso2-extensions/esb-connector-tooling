@@ -44,6 +44,7 @@ public class ConnectorBuilderUtils {
             if (useMavenWrapper) {
                 log.info("Using Maven Wrapper for build.");
                 invoker.setMavenExecutable(mvnwFile);
+                invoker.setMavenHome(new File(projectPath));
             } else {
                 log.info("Maven Wrapper not found. Falling back to system Maven.");
                 String mavenHome = getMavenHome();
