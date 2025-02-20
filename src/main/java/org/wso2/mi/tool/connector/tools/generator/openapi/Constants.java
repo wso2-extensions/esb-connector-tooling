@@ -35,4 +35,5 @@ public class Constants {
     public static final String OS_WINDOWS = "windows";
     public static final String MAVEN_GOALS = "clean install";
     public static final String HAS_RESPONSE_MODEL = "hasResponseModel";
+    public static final String JAVA_HOME = "java.home";
 }
