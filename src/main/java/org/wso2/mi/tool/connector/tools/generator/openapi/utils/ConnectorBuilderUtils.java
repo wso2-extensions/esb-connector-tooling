@@ -80,6 +80,7 @@ public class ConnectorBuilderUtils {
         InvocationRequest request = new DefaultInvocationRequest();
         request.setPomFile(pomPath.toFile());
         request.setInputStream(new ByteArrayInputStream(new byte[0])); // Avoid interactive mode
+        request.setJavaHome(new File(System.getProperty(Constants.JAVA_HOME)));
         return request;
     }
 
