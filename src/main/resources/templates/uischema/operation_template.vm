@@ -34,17 +34,33 @@
                                 #set($parameterList = $operation.getPathParameters())
                                 #set($response = $parameterList.addAll($operation.getQueryParameters()))
                                 #foreach ($param in $parameterList)
-                                    {
-                                        "type":"attribute",
-                                        "value":{
-                                            "name": "$param.getParameterName()",
-                                            "displayName": "$param.getDisplayName()",
-                                            "inputType": "stringOrExpression",
-                                            "defaultValue": "$param.getDefaultValue()",
-                                            "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
+                                    #if ($param.getJsonDescription() && $param.getJsonDescription().contains("Type: boolean"))
+                                        {
+                                            "type":"attribute",
+                                            "value":{
+                                                "name": "$param.getParameterName()",
+                                                "displayName": "$param.getDisplayName()",
+                                                "inputType": "comboOrExpression",
+                                                "comboValues": ["true", "false"],
+                                                "defaultValue": #if ($param.getDefaultValue() == true) "true" #else "false" #end,
+                                                "required": "$param.isRequired()",
+                                                "helpTip": "$param.getDescription()"
+                                            }
                                         }
-                                    }#if($foreach.hasNext),#end
+                                    #else
+                                        {
+                                            "type":"attribute",
+                                            "value":{
+                                                "name": "$param.getParameterName()",
+                                                "displayName": "$param.getDisplayName()",
+                                                "inputType": "stringOrExpression",
+                                                "defaultValue": "$param.getDefaultValue()",
+                                                "required": "$param.isRequired()",
+                                                "helpTip": "$param.getDescription() #if ($param.getJsonDescription().contains(" Type: date")) Format: yyyy-MM-dd #elseif ($param.getJsonDescription().contains(" Type: dateTime")) Format: yyyy-MM-dd'T'HH:mm:ss.SSSZ #end"
+                                            }
+                                        }
+                                    #end
+                                    #if($foreach.hasNext),#end
                                 #end
                             ]
                         }
@@ -65,7 +81,7 @@
                                             "inputType": "stringOrExpression",
                                             "defaultValue": "$param.getDefaultValue()",
                                             "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
+                                            "helpTip": "$param.getDescription()"
                                         }
                                     }#if($foreach.hasNext),#end
                                 #end
@@ -88,7 +104,7 @@
                                             "inputType": "stringOrExpression",
                                             "defaultValue": "$param.getDefaultValue()",
                                             "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
+                                            "helpTip": "$param.getDescription()"
                                         }
                                     }#if($foreach.hasNext),#end
                                 #end
@@ -103,17 +119,32 @@
                             "groupName": "Request Body",
                             "elements":[
                                 #foreach ($param in $operation.getRequestParameters())
-                                    {
-                                        "type":"attribute",
-                                        "value":{
-                                            "name": "$param.getParameterName()",
-                                            "displayName": "$param.getDisplayName()",
-                                            "inputType": "stringOrExpression",
-                                            "defaultValue": "$param.getDefaultValue()",
-                                            "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
+                                    #if ($param.getJsonDescription() && $param.getJsonDescription().contains("Type: boolean"))
+                                        {
+                                            "type":"attribute",
+                                            "value":{
+                                                "name": "$param.getParameterName()",
+                                                "displayName": "$param.getDisplayName()",
+                                                "inputType": "comboOrExpression",
+                                                "comboValues": ["true", "false"],
+                                                "defaultValue": #if ($param.getDefaultValue() == "true") "true" #else "false" #end,
+                                                "required": "$param.isRequired()",
+                                                "helpTip": "$param.getDescription()"
+                                            }
                                         }
-                                    }#if($foreach.hasNext),#end
+                                    #else
+                                        {
+                                            "type":"attribute",
+                                            "value":{
+                                                "name": "$param.getParameterName()",
+                                                "displayName": "$param.getDisplayName()",
+                                                "inputType": "stringOrExpression",
+                                                "defaultValue": "$param.getDefaultValue()",
+                                                "required": "$param.isRequired()",
+                                                "helpTip": "$param.getDescription() #if ($param.getJsonDescription() && $param.getJsonDescription().contains(" Type: date")) Format: yyyy-MM-dd #elseif ($param.getJsonDescription() && $param.getJsonDescription().contains(" Type: dateTime")) Format: yyyy-MM-dd'T'HH:mm:ss.SSSZ #end"
+                                            }
+                                        }
+                                    #end#if($foreach.hasNext),#end
                                 #end
                             ]
                         }
