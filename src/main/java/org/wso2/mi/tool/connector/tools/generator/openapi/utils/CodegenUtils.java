@@ -28,8 +28,6 @@ import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.openapi.model.Operation;
 import org.wso2.mi.tool.connector.tools.generator.openapi.model.Parameter;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -47,9 +45,9 @@ public class CodegenUtils {
 
     /**
      * Throw a ConnectorGenException with given message and exception
-     * @param message       message
-     * @param throwable     exception
-     * @throws ConnectorGenException
+     * @param message                   message
+     * @param throwable                 exception
+     * @throws ConnectorGenException    ConnectorGenException
      */
     public static void handleException(String message, Throwable throwable) throws ConnectorGenException {
 
@@ -114,7 +112,7 @@ public class CodegenUtils {
     /**
      * Replace all '/' characters with '_' character.
      * @param path  path to be normalized
-     * @return
+     * @return      normalized path
      */
     public static String normPath(String path) {
         return path.replaceAll("/", "_");
@@ -126,7 +124,7 @@ public class CodegenUtils {
      * @param required      is required      
      * @param description   description
      * @param defaultValue  default value
-     * @return
+     * @return              Parameter object
      */
     public static Parameter createParameter(String name, boolean required, String description, String defaultValue) {
 
@@ -169,12 +167,10 @@ public class CodegenUtils {
 
     /**
      * Read properties given via a JSON object and populate velocity context
-     * @param properties properties object
-     * connectorName: name of the connector
-     * @return
-     * @throws ConnectorGenException
-     * @throws IOException
-     * @throws URISyntaxException
+     * @param properties                properties object
+     * @param parentPath                parent path
+     * @return                          velocity context
+     * @throws ConnectorGenException    ConnectorGenException
      */
     public static VelocityContext createVelocityContext(Properties properties, String parentPath)
             throws ConnectorGenException {
