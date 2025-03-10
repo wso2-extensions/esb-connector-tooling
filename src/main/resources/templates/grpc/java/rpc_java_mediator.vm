@@ -1,0 +1,224 @@
+package org.wso2.carbon.${connectorName}connector;
+
+import ${package}.${javaGrpcStubFile};
+import io.grpc.Channel;
+import org.apache.synapse.MessageContext;
+
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+
+import org.wso2.carbon.connector.core.AbstractConnector;
+
+##
+## ProtoTypeMapper.vm - Velocity Template for Protocol Buffer Type to Java Class mapping
+##
+#set($protoToJavaMap = {
+  "TYPE_DOUBLE": "Double",
+  "TYPE_FLOAT": "Float",
+  "TYPE_INT64": "Long",
+  "TYPE_UINT64": "Long",
+  "TYPE_FIXED64": "Long",
+  "TYPE_SFIXED64": "Long",
+  "TYPE_SINT64": "Long",
+  "TYPE_INT32": "Integer",
+  "TYPE_UINT32": "Integer",
+  "TYPE_FIXED32": "Integer",
+  "TYPE_SFIXED32": "Integer",
+  "TYPE_SINT32": "Integer",
+  "TYPE_ENUM": "Integer",
+  "TYPE_BOOL": "Boolean",
+  "TYPE_STRING": "String",
+  "TYPE_BYTES": "byte[]",
+  "TYPE_MESSAGE": "Object"
+})
+##
+## Get the Java class name for a given Protocol Buffer type
+##
+#macro(getJavaClassName $protoType)
+#if($protoToJavaMap.containsKey($protoType))
+$protoToJavaMap.get($protoType)##
+#else
+Object##
+#end
+#end
+##
+## Get the primitive type name for a Protocol Buffer type if applicable
+##
+#macro(getJavaPrimitiveTypeName $protoType)
+#set($className = "#getJavaClassName($protoType)")
+#if($className == "Double")
+double##
+#elseif($className == "Float")
+float##
+#elseif($className == "Long")
+long##
+#elseif($className == "Integer")
+int##
+#elseif($className == "Boolean")
+boolean##
+#else
+$className##
+#end
+#end
+##
+## Check if a Protocol Buffer type maps to a primitive Java type
+##
+#macro(isPrimitive $protoType)
+#set($className = "#getJavaClassName($protoType)")
+#if($className == "Double" || $className == "Float" || $className == "Long" || $className == "Integer" || $className == "Boolean")
+true##
+#else
+false##
+#end
+#end
+##
+## Get the default value for a Protocol Buffer type
+##
+#macro(getDefaultValue $protoType)
+#set($className = "#getJavaClassName($protoType)")
+#if($className == "Double")
+0.0##
+#elseif($className == "Float")
+0.0f##
+#elseif($className == "Long")
+0L##
+#elseif($className == "Integer")
+0##
+#elseif($className == "Boolean")
+false##
+#elseif($className == "String")
+""##
+#elseif($className == "byte[]")
+new byte[0]##
+#else
+null##
+#end
+#end
+##
+## Get the Java type declaration for a field based on Protocol Buffer type
+## This includes the appropriate primitive or object type
+##
+#macro(getJavaTypeDeclaration $protoType)
+#if($protoType == "TYPE_DOUBLE" || $protoType == "TYPE_FLOAT")
+double##
+#elseif($protoType == "TYPE_INT64" || $protoType == "TYPE_UINT64" || $protoType == "TYPE_FIXED64" || $protoType == "TYPE_SFIXED64" || $protoType == "TYPE_SINT64")
+long##
+#elseif($protoType == "TYPE_INT32" || $protoType == "TYPE_UINT32" || $protoType == "TYPE_FIXED32" || $protoType == "TYPE_SFIXED32" || $protoType == "TYPE_SINT32" || $protoType == "TYPE_ENUM")
+int##
+#elseif($protoType == "TYPE_BOOL")
+boolean##
+#elseif($protoType == "TYPE_STRING")
+String##
+#elseif($protoType == "TYPE_BYTES")
+byte[]##
+#elseif($protoType == "TYPE_MESSAGE")
+Object## ## This could be replaced with the actual message type name if available
+#else
+Object## ## Default fallback
+#end
+#end
+##
+## Get the converter method name to use for a given Protocol Buffer type
+##
+#macro(getConverterMethod $protoType)
+#if($protoType == "TYPE_DOUBLE")
+toDouble##
+#elseif($protoType == "TYPE_FLOAT")
+toFloat##
+#elseif($protoType == "TYPE_INT64" || $protoType == "TYPE_UINT64" || $protoType == "TYPE_FIXED64" || $protoType == "TYPE_SFIXED64" || $protoType == "TYPE_SINT64")
+toLong##
+#elseif($protoType == "TYPE_INT32" || $protoType == "TYPE_UINT32" || $protoType == "TYPE_FIXED32" || $protoType == "TYPE_SFIXED32" || $protoType == "TYPE_SINT32" || $protoType == "TYPE_ENUM")
+toInteger##
+#elseif($protoType == "TYPE_BOOL")
+toBoolean##
+#elseif($protoType == "TYPE_STRING")
+toString##
+#elseif($protoType == "TYPE_BYTES")
+toByteArray##
+#else
+convert##
+#end
+#end
+## Helper function to convert FieldDescriptorProto.Type to Java type
+#macro(convertProtoTypeToJava $protoType)
+#if($protoType == "TYPE_DOUBLE" || $protoType == "TYPE_FLOAT")
+double##
+#elseif($protoType == "TYPE_INT64" || $protoType == "TYPE_UINT64" || $protoType == "TYPE_FIXED64" || $protoType == "TYPE_SFIXED64" || $protoType == "TYPE_SINT64")
+long##
+#elseif($protoType == "TYPE_INT32" || $protoType == "TYPE_UINT32" || $protoType == "TYPE_FIXED32" || $protoType == "TYPE_SFIXED32" || $protoType == "TYPE_SINT32" || $protoType == "TYPE_ENUM")
+int##
+#elseif($protoType == "TYPE_BOOL")
+boolean##
+#elseif($protoType == "TYPE_STRING")
+String##
+#elseif($protoType == "TYPE_BYTES")
+byte[]##
+#elseif($protoType == "TYPE_MESSAGE")
+Object## ## This could be replaced with the actual message type name if available
+#else
+Object## ## Default fallback
+#end
+#end
+#set($rpcName = $rpcCall.getRpcCallName())
+#set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toUpperCase())
+#set($remainder = $rpcCall.getRpcCallName().substring(1))
+#set($capitalizedKey = "${firstChar}${remainder}")
+public class ${capitalizedKey}Mediator extends AbstractConnector {
+    #foreach($field in $rpcCall.getInput())
+    #set($javaType = "#convertProtoTypeToJava($field.getType())")
+    private $javaType ${field.getName()}#if($field.hasDefaultValue()) = ${field.getDefaultValue()}#end;
+    #end
+    ## Generate getters and setters
+    #foreach($field in $rpcCall.getInput())
+    #set($protoType = $field.getType().toString())
+    #set($javaType = "#convertProtoTypeToJava($field.getType().toString())")
+    #set($fieldName = $field.getName())
+    #set($capitalizedName = $fieldName.substring(0,1).toUpperCase() + $fieldName.substring(1))
+
+    public void set${capitalizedName}(String ${fieldName}) {
+        #set($converterMethod = "#getConverterMethod($protoType)")
+        #if($converterMethod == "convert")
+            this.$fieldName = (#convertProtoTypeToJava($protoType)) TypeConverter.convert($fieldName, #getJavaClassName($protoType).class);
+        #elseif($converterMethod == "toString")
+            this.$fieldName = $fieldName;
+        #else
+            this.$fieldName = TypeConverter.${converterMethod}($fieldName);
+        #end
+    }
+
+    public $javaType get${capitalizedName}() {
+        return ${fieldName};
+    }
+    #end
+
+    @Override
+    public void connect(MessageContext context) {
+        try {
+
+             ${javaGrpcStubFile}.${rpcCall.getInputName()} request = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder()
+             #foreach($entry in $rpcCall.getInput())
+             #set($capitalizedFName = $entry.getName().substring(0,1).toUpperCase() + $entry.getName().substring(1))
+                 .set${capitalizedFName}($entry.getName())
+             #end
+                 .build();
+
+             ${package}.${javaGrpcServerFile}.${serviceName}BlockingStub stub = ${package}.${javaGrpcServerFile}.newBlockingStub((ManagedChannel) context
+                     .getProperty("grpc_channel"));
+
+             #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
+
+             #if($isJavaMultipleFiles)
+                ${package}.$rpcCall.getOutputName() response = stub.${methodName}(request);
+             #else
+                ${javaGrpcStubFile}.$rpcCall.getOutputName() response = stub.${methodName}(request);
+             #end
+             String jsonPayload = "{#set($first = true)#foreach($entry in $outputFMethods.entrySet())#if(!$first),#else#set($first = false)#end\"$entry.key\":\"" + response.${entry.value}() + "\"#end}";
+
+             context.getEnvelope().getBody().getFirstElement().setText(jsonPayload);
+
+        } catch (Exception e) {
+            log.error("Error in ${capitalizedKey}Mediator: ", e);
+
+        }
+    }
+}

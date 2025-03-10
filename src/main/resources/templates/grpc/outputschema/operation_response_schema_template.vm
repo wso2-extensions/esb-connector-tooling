@@ -1,0 +1,38 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": "$connectorName $rpcservice.rpccall.getName() Operation Response Schema",
+    "description": "Schema representing the output of the $$rpcservice.rpccall.getName() operation in $connectorName",
+    "properties": {
+       #if ($rpcservice.rpccall.getOutput() != "")
+        "payload": $rpcservice.rpccall.getOutput(),
+      #else
+        "payload": {
+            "type": "object",
+            "description": "Payload of the API response.",
+            "additionalProperties": true
+        },
+      #end
+      "attributes": {
+        "type": "object",
+        "description": "Metadata about the operation.",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code of the API response.",
+            "minimum": 100,
+            "maximum": 599
+          }
+        },
+        "required": ["statusCode"],
+        "additionalProperties": false
+      },
+      "headers": {
+        "type": "object",
+        "description": "HTTP headers of the API response.",
+        "additionalProperties": false
+      }
+    },
+    "required": ["payload", "attributes", "headers"],
+    "additionalProperties": false
+  }

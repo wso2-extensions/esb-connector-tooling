@@ -1,0 +1,59 @@
+{
+    "connectorName": "$connectorName",
+    "connectionName": "$connectorName",
+    "title": "$connectorName connection",
+    "help": "$connectorName connection",
+    "elements": [
+        {
+            "type": "attribute",
+            "value": {
+                "name": "connectionName",
+                "displayName": "Connection Name",
+                "inputType": "string",
+                "defaultValue": "${connectorName}_CONNECTION",
+                "required": "true",
+                "helpTip": "The name for the $connectorName connection.",
+                "validation": "nameWithoutSpecialCharactors"
+            }
+        },
+        {
+            "type": "attributeGroup",
+            "value": {
+                "groupName": "General",
+                "elements": [
+                    {
+                        "type": "attributeGroup",
+                        "value": {
+                            "groupName": "Basic",
+                            "elements": [
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "server",
+                                        "displayName": "Server URL",
+                                        "inputType": "stringOrExpression",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "The service root URL."
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "port",
+                                        "displayName": "Port",
+                                        "inputType": "string",
+                                        "match Pattern": "^\\d+$",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "The port for the root URL."
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}

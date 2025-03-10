@@ -1,0 +1,20 @@
+<template xmlns="http://ws.apache.org/ns/synapse" name="$rpcCall.getRpcCallName()">
+    #foreach($entry in $rpcCall.getInput())
+    <parameter name="${entry.getName()}" description="The '${entry.getName()}' field for grpc request"/>
+    #end
+    <parameter name="responseVariable" description="The name of the variable to which the response should be stored."/>
+    <parameter name="overwriteBody" description="Replace the Message Body in Message Context with the response of the operation."/>
+    <sequence>
+    <!-- Possibly an In mediator or other mediators that read the inbound request -->
+        <!-- Initiate Connection -->
+        #set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toUpperCase())
+        #set($remainder = $rpcCall.getRpcCallName().substring(1))
+        #set($capitalizedKey = "${firstChar}${remainder}")
+
+    <class name="org.wso2.carbon.${connectorName}connector.${capitalizedKey}Mediator">
+        #foreach($entry in $rpcCall.getInput())
+        <property name="${entry.getName()}" expression="$func:${entry.getName()}"/>
+        #end
+    </class>
+</sequence>
+</template>

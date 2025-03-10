@@ -1,0 +1,126 @@
+package org.wso2.carbon.${connectorName}connector;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Base64;
+
+/**
+ * Utility class for converting String values to various Java types.
+ */
+public class TypeConverter {
+
+    /**
+     * Converts a String value to the specified target type.
+     *
+     * @param value The String value to convert
+     * @param targetType The Class representing the target type
+     * @param <T> The generic type parameter
+     * @return The converted value, or null if conversion is not supported or fails
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T convert(String value, Class<T> targetType) {
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            if (String.class.equals(targetType)) {
+                return (T) value;
+            } else if (Long.class.equals(targetType) || long.class.equals(targetType)) {
+                return (T) Long.valueOf(value);
+            } else if (Integer.class.equals(targetType) || int.class.equals(targetType)) {
+                return (T) Integer.valueOf(value);
+            } else if (Double.class.equals(targetType) || double.class.equals(targetType)) {
+                return (T) Double.valueOf(value);
+            } else if (Float.class.equals(targetType) || float.class.equals(targetType)) {
+                return (T) Float.valueOf(value);
+            } else if (Boolean.class.equals(targetType) || boolean.class.equals(targetType)) {
+                return (T) Boolean.valueOf(value);
+            } else if (Short.class.equals(targetType) || short.class.equals(targetType)) {
+                return (T) Short.valueOf(value);
+            } else if (Byte.class.equals(targetType) || byte.class.equals(targetType)) {
+                return (T) Byte.valueOf(value);
+            } else if (Character.class.equals(targetType) || char.class.equals(targetType)) {
+                return value.isEmpty() ? null : (T) Character.valueOf(value.charAt(0));
+            } else if (BigDecimal.class.equals(targetType)) {
+                return (T) new BigDecimal(value);
+            } else if (BigInteger.class.equals(targetType)) {
+                return (T) new BigInteger(value);
+            } else if (LocalDate.class.equals(targetType)) {
+                return (T) LocalDate.parse(value);
+            } else if (LocalDateTime.class.equals(targetType)) {
+                return (T) LocalDateTime.parse(value);
+            } else if (byte[].class.equals(targetType)) {
+                return (T) Base64.getDecoder().decode(value);
+            }
+        } catch (Exception e) {
+            // Log the exception or handle it as appropriate for your application
+            System.err.println("Error converting '" + value + "' to " + targetType.getName() + ": " + e.getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Converts a String value to Long.
+     *
+     * @param value The String value to convert
+     * @return The converted Long value, or null if conversion fails
+     */
+    public static Long toLong(String value) {
+        return convert(value, Long.class);
+    }
+
+    /**
+     * Converts a String value to Integer.
+     *
+     * @param value The String value to convert
+     * @return The converted Integer value, or null if conversion fails
+     */
+    public static Integer toInteger(String value) {
+        return convert(value, Integer.class);
+    }
+
+    /**
+     * Converts a String value to Double.
+     *
+     * @param value The String value to convert
+     * @return The converted Double value, or null if conversion fails
+     */
+    public static Double toDouble(String value) {
+        return convert(value, Double.class);
+    }
+
+    /**
+     * Converts a String value to Float.
+     *
+     * @param value The String value to convert
+     * @return The converted Float value, or null if conversion fails
+     */
+    public static Float toFloat(String value) {
+        return convert(value, Float.class);
+    }
+
+    /**
+     * Converts a String value to Boolean.
+     *
+     * @param value The String value to convert
+     * @return The converted Boolean value, or null if conversion fails
+     */
+    public static Boolean toBoolean(String value) {
+        return convert(value, Boolean.class);
+    }
+
+    /**
+     * Converts a String value to byte array.
+     * The input string is expected to be Base64 encoded.
+     *
+     * @param value The Base64 encoded String value to convert
+     * @return The decoded byte array, or null if conversion fails
+     */
+    public static byte[] toByteArray(String value) {
+        return convert(value, byte[].class);
+    }
+}

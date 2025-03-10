@@ -1,0 +1,157 @@
+{
+    "connectorName": "$connectorName",
+    "operationName": "$rpcCall.getRpcCallName()",
+    "title": "$rpcCall.getRpcCallName()",
+    "help": "$rpcCall.getRpcCallName()",
+    "markdownDescription": "# Summary\n \n# Prerequisites\n\n# Input\n\n# Output\n\n# Error\n\n# Example\n\n# Notes\n\n",
+    "elements": [
+        {
+            "type": "attributeGroup",
+            "value": {
+                "groupName": "General",
+                "elements": [
+                    {
+                        "type": "attribute",
+                        "value": {
+                          "name": "configRef",
+                          "displayName": "Connection",
+                          "inputType": "connection",
+                          "allowedConnectionTypes": [
+                            "$connectorName"
+                          ],
+                          "defaultType": "connection.$connectorName",
+                          "defaultValue": "",
+                          "required": "true",
+                          "helpTip": "Connection to be used"
+                        }
+                    }
+                    #if ($rpcCall.getInput().size() > 0)
+                    ,{
+                        "type":"attributeGroup",
+                        "value":{
+                            "groupName": "Input Values",
+                            "elements":[
+                                #set($parameterList = $rpcCall.getInput())
+                                #foreach ($param in $parameterList)
+                                    {
+                                        "type":"attribute",
+                                        "value":{
+                                            "name": "$param.getName()",
+                                            "displayName": "$param.getName()",
+                                            "inputType": "stringOrExpression",
+                                            "defaultValue": "$param.getName()",
+                                            "required": "$param.isRequired()",
+                                            "helpTip": "$param.getName()"
+                                        }
+                                    }#if($foreach.hasNext),#end
+                                #end
+                            ]
+                        }
+                    }
+                    #end
+                    #if ($operation.getHeaderParameters().size() > 0)
+                    ,{
+                        "type":"attributeGroup",
+                        "value":{
+                            "groupName": "Headers",
+                            "elements":[
+                                #foreach ($param in $operation.getHeaderParameters())
+                                    {
+                                        "type":"attribute",
+                                        "value":{
+                                            "name": "$param.getParameterName()",
+                                            "displayName": "$param.getDisplayName()",
+                                            "inputType": "stringOrExpression",
+                                            "defaultValue": "$param.getDefaultValue()",
+                                            "required": "$param.isRequired()",
+                                            "helpTip": "$param.getJsonDescription()"
+                                        }
+                                    }#if($foreach.hasNext),#end
+                                #end
+                            ]
+                        }
+                    }
+                    #end
+                    #if ($operation.getCookieParameters().size() > 0)
+                    ,{
+                        "type":"attributeGroup",
+                        "value":{
+                            "groupName": "Cookies",
+                            "elements":[
+                                #foreach ($param in $operation.getCookieParameters())
+                                    {
+                                        "type":"attribute",
+                                        "value":{
+                                            "name": "$param.getParameterName()",
+                                            "displayName": "$param.getDisplayName()",
+                                            "inputType": "stringOrExpression",
+                                            "defaultValue": "$param.getDefaultValue()",
+                                            "required": "$param.isRequired()",
+                                            "helpTip": "$param.getJsonDescription()"
+                                        }
+                                    }#if($foreach.hasNext),#end
+                                #end
+                            ]
+                        }
+                    }
+                    #end
+                    #if ($operation.getRequestParameters().size() > 0)
+                    ,{
+                        "type":"attributeGroup",
+                        "value":{
+                            "groupName": "Request Body",
+                            "elements":[
+                                #foreach ($param in $operation.getRequestParameters())
+                                    {
+                                        "type":"attribute",
+                                        "value":{
+                                            "name": "$param.getParameterName()",
+                                            "displayName": "$param.getDisplayName()",
+                                            "inputType": "stringOrExpression",
+                                            "defaultValue": "$param.getDefaultValue()",
+                                            "required": "$param.isRequired()",
+                                            "helpTip": "$param.getJsonDescription()"
+                                        }
+                                    }#if($foreach.hasNext),#end
+                                #end
+                            ]
+                        }
+                    }
+                    #end
+                    #if ($hasResponseModel==true)
+                    ,{
+                        "type":"attributeGroup",
+                        "value":{
+                            "groupName": "Output",
+                            "elements":[
+                                {
+                                    "type":"attribute",
+                                    "value":{
+                                        "name": "responseVariable",
+                                        "displayName": "Output Variable Name",
+                                        "inputType": "string",
+                                        "deriveResponseVariable" : true,
+                                        "required": "true",
+                                        "helpTip": "Name of the variable to which the output of the operation should be assigned"
+                                    }
+                                },
+                                {
+                                    "type":"attribute",
+                                    "value":{
+                                        "name": "overwriteBody",
+                                        "displayName": "Replace Message Body",
+                                        "inputType": "checkbox",
+                                        "defaultValue": "false",
+                                        "helpTip": "Replace the Message Body in Message Context with the output of the operation (This will remove the payload from the above variable).",
+                                        "required": "false"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                    #end
+                ]
+            }
+        }
+    ]
+}
