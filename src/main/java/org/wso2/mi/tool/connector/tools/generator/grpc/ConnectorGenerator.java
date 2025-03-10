@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ProjectGeneratorUtils.generateConnectorProject;
 
 /**
- * Generates the connector using the OpenAPI spec.
+ * Generates the connector using the Protobuf spec.
  */
 public class ConnectorGenerator {
 //    private static final Log LOG = LogFactory.getLog(ConnectorGenerator.class);
@@ -70,7 +71,7 @@ public class ConnectorGenerator {
 //        if (!protoFile.endsWith("**.proto")) {
 //            throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_100.getDescription());
 //        }
-            generateConnector("greet.proto", "/Users/hansaninissanka/Desktop/GRPC/",
+            generateConnector("/Users/hansaninissanka/Desktop/GRPC/Protofiles/bookcpy.proto", "/Users/hansaninissanka/Desktop/GRPC/",
                     "4.4.0", "/Users/hansaninissanka/Desktop/GRPC/");
         } catch (IOException | InterruptedException e) {
             System.out.println(e);
@@ -94,7 +95,9 @@ public class ConnectorGenerator {
         Path protocPath = ProtocExecutor.downloadAndExtractProtoc();
         // 2. Download + Mark executable the gRPC plugin
         Path grpcPluginPath = ProtocExecutor.downloadGrpcPlugin();
-        String protoSourceDir = "/Users/hansaninissanka/Desktop/GRPC/Protofiles";
+        Path protoFPath = Paths.get(protoFile);
+        String protoSourceDir = protoFPath.getParent().toString();
+        String protoFileName = protoFPath.getFileName().toString();
 
         String tempOutputDir = protoSourceDir + "/generated";
 
@@ -103,13 +106,13 @@ public class ConnectorGenerator {
                 protocPath.toFile(),
                 grpcPluginPath.toFile(),
                 protoSourceDir,
-                protoFile,
+                protoFileName,
                 tempOutputDir
         );
         System.out.println("Protoc execution " + (success ? "succeeded" : "failed"));
         FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
-        VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFile);
-        generateConnectorProject(protoFile, projectHome, miVersion, connectorPath, velocityEngine,
+        VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
+        generateConnectorProject(protoFileName, projectHome, miVersion, connectorPath, velocityEngine,
                 velocityForProtoFile, tempOutputDir);
 
     }
@@ -163,7 +166,10 @@ public class ConnectorGenerator {
         return context;
     }
 
-    private static void populateRPCcall(DescriptorProtos.FileDescriptorProto fileProto, Map<String, DescriptorProtos.DescriptorProto> messageTypeMap, Map<String, RPCService.RPCCall> rcpMap, DescriptorProtos.MethodDescriptorProto method) {
+    private static void populateRPCcall(DescriptorProtos.FileDescriptorProto fileProto,
+                                        Map<String, DescriptorProtos.DescriptorProto> messageTypeMap,
+                                        Map<String, RPCService.RPCCall> rcpMap,
+                                        DescriptorProtos.MethodDescriptorProto method) {
         String methodName = method.getName();
         String inputType = method.getInputType();
         String packageName = fileProto.getPackage();

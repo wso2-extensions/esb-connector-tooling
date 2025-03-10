@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.capitalizeFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.deleteDirectory;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.lowercaseFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.HAS_RESPONSE_MODEL;
@@ -338,6 +339,7 @@ public class ProjectGeneratorUtils {
                                      VelocityEngine engine, VelocityContext context) throws IOException {
         operationList.add(rpcCall);
         context.put("rpcCall", rpcCall);
+        operationName = lowercaseFirstLetter(operationName);
         String synapseFileName = pathToResourcesDir + "/functions/" + operationName + ".xml";
         String uischemaFileName = pathToResourcesDir + "/uischema/" + operationName + ".json";
         generateJavaMediators(context);

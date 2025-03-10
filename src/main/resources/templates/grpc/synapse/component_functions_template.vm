@@ -21,12 +21,12 @@
 <component name="functions" type="synapse/template">
     <subComponents>
         #foreach($key in $service.getRpcCallsMap().keySet())
-        #set($firstChar = $key.substring(0,1).toUpperCase())
+        #set($firstChar = $key.substring(0,1).toLowerCase())
         #set($remainder = $key.substring(1))
-        #set($capitalizedKey = "${firstChar}${remainder}")
-        <component name="${capitalizedKey}">
-            <file>${capitalizedKey}.xml</file>
-            <description>${operation.getXmlDescription()}</description>
+        #set($lowercaseKey = "${firstChar}${remainder}")
+        <component name="${lowercaseKey}">
+            <file>${lowercaseKey}.xml</file>
+            <description>This is grpc ${key} operation.</description>
         </component>
         #end
     </subComponents>

@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 public class CodeGenerationUtils {
@@ -15,6 +16,13 @@ public class CodeGenerationUtils {
             return str;
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    public static String lowercaseFirstLetter(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toLowerCase(Locale.ENGLISH) + str.substring(1);
     }
 
     public static DescriptorProtos.FileDescriptorSet loadDescriptorSet(String descriptorFilePath) throws IOException {

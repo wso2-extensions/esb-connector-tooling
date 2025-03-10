@@ -1,4 +1,7 @@
-<template xmlns="http://ws.apache.org/ns/synapse" name="$rpcCall.getRpcCallName()">
+#set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toLowerCase())
+#set($remainder = $rpcCall.getRpcCallName().substring(1))
+#set($lowercaseKey = "${firstChar}${remainder}")
+<template xmlns="http://ws.apache.org/ns/synapse" name="$lowercaseKey">
     #foreach($entry in $rpcCall.getInput())
     <parameter name="${entry.getName()}" description="The '${entry.getName()}' field for grpc request"/>
     #end
