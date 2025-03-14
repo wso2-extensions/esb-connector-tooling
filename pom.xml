@@ -312,7 +312,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <addClasspath>true</addClasspath>
+<!--                            <addClasspath>true</addClasspath>-->
                             <mainClass>org.wso2.mi.tool.connector.tools.generator.grpc.ConnectorGenerator</mainClass>
                         </manifest>
                     </archive>
@@ -329,7 +329,7 @@
                     <repositoryName>lib</repositoryName>
                     <programs>
                         <program>
-                            <mainClass>org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenerator</mainClass>
+                            <mainClass>org.wso2.mi.tool.connector.tools.generator.grpc.ConnectorGenerator</mainClass>
                             <id>generator</id>
                         </program>
                     </programs>

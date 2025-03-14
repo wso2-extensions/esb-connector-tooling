@@ -1,12 +1,25 @@
 package org.wso2.carbon.${connectorName}connector;
 
-import ${package}.${javaGrpcStubFile};
-import io.grpc.Channel;
+#set($importStatements = "")
+#set($packageName = "" )
+#if($javaPackage )
+    #set($packageName = $javaPackage )
+#else
+    #set($packageName = $package )
+    #set($packageN = $package)
+#end
+import ${packageName}.${javaGrpcStubFile};
+import ${packageName}.${javaGrpcServerFile};
+import ${packageName}.${rpcCall.getInputName()};
+import ${packageName}.${rpcCall.getOutputName()};
+
+$importStatements
 import org.apache.synapse.MessageContext;
 
 import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 
+import org.apache.synapse.commons.json.JsonUtil;
+import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.wso2.carbon.connector.core.AbstractConnector;
 
 ##
@@ -42,24 +55,6 @@ Object##
 #end
 #end
 ##
-## Get the primitive type name for a Protocol Buffer type if applicable
-##
-#macro(getJavaPrimitiveTypeName $protoType)
-#set($className = "#getJavaClassName($protoType)")
-#if($className == "Double")
-double##
-#elseif($className == "Float")
-float##
-#elseif($className == "Long")
-long##
-#elseif($className == "Integer")
-int##
-#elseif($className == "Boolean")
-boolean##
-#else
-$className##
-#end
-#end
 ##
 ## Check if a Protocol Buffer type maps to a primitive Java type
 ##
@@ -95,29 +90,6 @@ null##
 #end
 #end
 ##
-## Get the Java type declaration for a field based on Protocol Buffer type
-## This includes the appropriate primitive or object type
-##
-#macro(getJavaTypeDeclaration $protoType)
-#if($protoType == "TYPE_DOUBLE" || $protoType == "TYPE_FLOAT")
-double##
-#elseif($protoType == "TYPE_INT64" || $protoType == "TYPE_UINT64" || $protoType == "TYPE_FIXED64" || $protoType == "TYPE_SFIXED64" || $protoType == "TYPE_SINT64")
-long##
-#elseif($protoType == "TYPE_INT32" || $protoType == "TYPE_UINT32" || $protoType == "TYPE_FIXED32" || $protoType == "TYPE_SFIXED32" || $protoType == "TYPE_SINT32" || $protoType == "TYPE_ENUM")
-int##
-#elseif($protoType == "TYPE_BOOL")
-boolean##
-#elseif($protoType == "TYPE_STRING")
-String##
-#elseif($protoType == "TYPE_BYTES")
-byte[]##
-#elseif($protoType == "TYPE_MESSAGE")
-Object## ## This could be replaced with the actual message type name if available
-#else
-Object## ## Default fallback
-#end
-#end
-##
 ## Get the converter method name to use for a given Protocol Buffer type
 ##
 #macro(getConverterMethod $protoType)
@@ -139,25 +111,51 @@ toByteArray##
 convert##
 #end
 #end
-## Helper function to convert FieldDescriptorProto.Type to Java type
-#macro(convertProtoTypeToJava $protoType)
-#if($protoType == "TYPE_DOUBLE" || $protoType == "TYPE_FLOAT")
-double##
-#elseif($protoType == "TYPE_INT64" || $protoType == "TYPE_UINT64" || $protoType == "TYPE_FIXED64" || $protoType == "TYPE_SFIXED64" || $protoType == "TYPE_SINT64")
-long##
-#elseif($protoType == "TYPE_INT32" || $protoType == "TYPE_UINT32" || $protoType == "TYPE_FIXED32" || $protoType == "TYPE_SFIXED32" || $protoType == "TYPE_SINT32" || $protoType == "TYPE_ENUM")
-int##
-#elseif($protoType == "TYPE_BOOL")
-boolean##
-#elseif($protoType == "TYPE_STRING")
-String##
-#elseif($protoType == "TYPE_BYTES")
-byte[]##
-#elseif($protoType == "TYPE_MESSAGE")
-Object## ## This could be replaced with the actual message type name if available
+## Helper function to convert FieldDescriptorProto to Java type
+#macro(convertProtoTypeToJava $fieldDescriptor)
+#if($fieldDescriptor.label == "LABEL_REPEATED")
+    #if($fieldDescriptor.type == "TYPE_DOUBLE" || $fieldDescriptor.type == "TYPE_FLOAT")
+    double[]##
+    #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
+    long[]##
+    #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")
+    int[]##
+    #elseif($fieldDescriptor.type == "TYPE_BOOL")
+    boolean[]##
+    #elseif($fieldDescriptor.type == "TYPE_STRING")
+    String[]##
+    #elseif($fieldDescriptor.type == "TYPE_BYTES")
+    byte[][]##
+    #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
+    #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+    $result##
+    #else
+    Object[]##
+    #end
 #else
-Object## ## Default fallback
+    #if($fieldDescriptor.type == "TYPE_DOUBLE" || $fieldDescriptor.type == "TYPE_FLOAT")
+    double##
+    #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
+    long##
+    #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")
+    int##
+    #elseif($fieldDescriptor.type == "TYPE_BOOL")
+    boolean##
+    #elseif($fieldDescriptor.type == "TYPE_STRING")
+    String##
+    #elseif($fieldDescriptor.type == "TYPE_BYTES")
+    byte[]##
+    #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
+    #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+    $result##
+    #else
+    Object##
+    #end
 #end
+#end
+#macro(getTypeName $input $typePackageName)
+#set($result = $input.replace($typePackageName + ".", ""))
+$result##
 #end
 #set($rpcName = $rpcCall.getRpcCallName())
 #set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toUpperCase())
@@ -165,20 +163,21 @@ Object## ## Default fallback
 #set($capitalizedKey = "${firstChar}${remainder}")
 public class ${capitalizedKey}Mediator extends AbstractConnector {
     #foreach($field in $rpcCall.getInput())
-    #set($javaType = "#convertProtoTypeToJava($field.getType())")
-    private $javaType ${field.getName()}#if($field.hasDefaultValue()) = ${field.getDefaultValue()}#end;
+    #set($javaType = "#convertProtoTypeToJava($field)")
+    private ${javaType.trim()} ${field.getName()}#if($field.hasDefaultValue()) = ${field.getDefaultValue()}#end;
     #end
     ## Generate getters and setters
     #foreach($field in $rpcCall.getInput())
     #set($protoType = $field.getType().toString())
-    #set($javaType = "#convertProtoTypeToJava($field.getType().toString())")
+    #set($javaType = "#convertProtoTypeToJava($field)")
     #set($fieldName = $field.getName())
     #set($capitalizedName = $fieldName.substring(0,1).toUpperCase() + $fieldName.substring(1))
 
     public void set${capitalizedName}(String ${fieldName}) {
         #set($converterMethod = "#getConverterMethod($protoType)")
+        #set($javaClass = "#convertProtoTypeToJava($field)")
         #if($converterMethod == "convert")
-            this.$fieldName = (#convertProtoTypeToJava($protoType)) TypeConverter.convert($fieldName, #getJavaClassName($protoType).class);
+            this.$fieldName = (${javaClass.trim()}) TypeConverter.convert($fieldName, ${javaClass.trim()}.class);
         #elseif($converterMethod == "toString")
             this.$fieldName = $fieldName;
         #else
@@ -186,7 +185,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
         #end
     }
 
-    public $javaType get${capitalizedName}() {
+    public ${javaType.trim()} get${capitalizedName}() {
         return ${fieldName};
     }
     #end
@@ -194,31 +193,85 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
     @Override
     public void connect(MessageContext context) {
         try {
+           #set($setters = [])
+           #foreach($entry in $rpcCall.getInput())
+             #set($methodName = "#toSetterName($entry.getName())")
+             #set($argument = "($entry.getName())")
+             #set($void = $setters.add("." + $methodName + " " + $argument))
+           #end
 
-             ${javaGrpcStubFile}.${rpcCall.getInputName()} request = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder()
-             #foreach($entry in $rpcCall.getInput())
-             #set($capitalizedFName = $entry.getName().substring(0,1).toUpperCase() + $entry.getName().substring(1))
-                 .set${capitalizedFName}($entry.getName())
+           #if($isJavaMultipleFiles)
+            ${rpcCall.getInputName()} request = ${rpcCall.getInputName()}.newBuilder()
+           #else
+            ${javaGrpcStubFile}.${rpcCall.getInputName()} request = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder()
+           #end
+             #foreach($entry in $inputFMethods.entrySet())
+             #set($isArray = $entry.getValue().indexOf("All") > -1)
+             #if($isArray)
+                 #set($importStatements = "import java.util.Arrays;")
+                 .${entry.getValue()}(Arrays.asList($entry.getKey()))
+             #else
+                 .${entry.getValue()}($entry.getKey())
+             #end
              #end
                  .build();
 
-             ${package}.${javaGrpcServerFile}.${serviceName}BlockingStub stub = ${package}.${javaGrpcServerFile}.newBlockingStub((ManagedChannel) context
-                     .getProperty("grpc_channel"));
-
-             #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
-
-             #if($isJavaMultipleFiles)
-                ${package}.$rpcCall.getOutputName() response = stub.${methodName}(request);
-             #else
-                ${javaGrpcStubFile}.$rpcCall.getOutputName() response = stub.${methodName}(request);
-             #end
-             String jsonPayload = "{#set($first = true)#foreach($entry in $outputFMethods.entrySet())#if(!$first),#else#set($first = false)#end\"$entry.key\":\"" + response.${entry.value}() + "\"#end}";
-
-             context.getEnvelope().getBody().getFirstElement().setText(jsonPayload);
-
+           ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub((ManagedChannel) context
+                   .getProperty("grpc_channel"));
+           #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
+           #if($isJavaMultipleFiles)
+               $rpcCall.getOutputName() response = stub.${methodName}(request);
+           #else
+               ${javaGrpcStubFile}.$rpcCall.getOutputName() response = stub.${methodName}(request);
+           #end
+           String jsonPayload = "{#set($first = true)#foreach($entry in $outputFMethods.entrySet())#if(!$first),#else#set($first = false)#end\"$entry.key\":\"" + response.${entry.value}() + "\"#end}";
+           org.apache.axis2.context.MessageContext axisMsgCtx = ((Axis2MessageContext) context).getAxis2MessageContext();
+           JsonUtil.getNewJsonPayload(axisMsgCtx, jsonPayload, true, true);
+           axisMsgCtx.setProperty(org.apache.axis2.Constants.Configuration.MESSAGE_TYPE, "application/json");
+           axisMsgCtx.setProperty(org.apache.axis2.Constants.Configuration.CONTENT_TYPE, "application/json");
         } catch (Exception e) {
             log.error("Error in ${capitalizedKey}Mediator: ", e);
-
         }
     }
 }
+##
+## Maps Protocol Buffer types to corresponding Java types, including user-defined types.
+##
+#macro(getJavaClassName $fieldDescriptorProto)
+#if($protoToJavaMap.containsKey($fieldDescriptorProto.type))
+  $protoToJavaMap.get($fieldDescriptorProto.type)##
+#elseif($fieldDescriptorProto.type == "TYPE_MESSAGE")
+  ${packageName}.#getTypeName($fieldDescriptorProto.typeName, $packageN)##
+#else
+  Object##
+#end
+#end
+
+##
+## Returns the Java type, handling arrays if the field is repeated.
+##
+#macro(getJavaType $fieldDescriptorProto)
+#if($fieldDescriptorProto.label == "LABEL_REPEATED")
+  #if($fieldDescriptorProto.type == "TYPE_MESSAGE")
+    ${packageName}.#getTypeName($fieldDescriptorProto.typeName, $packageN)[]##
+  #else
+    #getJavaClassName($fieldDescriptorProto)[]##
+  #end
+#else
+  #getJavaClassName($fieldDescriptorProto)##
+#end
+#end
+##
+## Checks if a Protocol Buffer type maps to a Java primitive type.
+##
+#macro(isPrimitive $fieldDescriptorProto)
+#set($className = "#getJavaClassName($fieldDescriptorProto)")
+#if($className == "Double" || $className == "Float" || $className == "Long" || $className == "Integer" ||
+    $className == "Boolean" || $className == "Short" || $className == "Byte" || $className == "Character" ||
+    $className == "int" || $className == "long" || $className == "double" || $className == "float" ||
+    $className == "boolean" || $className == "short" || $className == "byte")
+  true##
+#else
+  false##
+#end
+#end

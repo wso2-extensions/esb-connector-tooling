@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2025, WSO2 LLC. (http://www.wso2.org).
+ *  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
  *  WSO2 LLC. licenses this file to you under the Apache License,
  *  Version 2.0 (the "License"); you may not use this file except
@@ -25,9 +25,6 @@ import java.util.Map;
  */
 class SupportOSTypes {
 
-    private SupportOSTypes() {
-    }
-
     static final String AIX = "aix";
     static final String HPUX = "hpux";
     static final String OS400 = "os400";
@@ -40,7 +37,6 @@ class SupportOSTypes {
     static final String WINDOWS = "windows";
     static final String SOLARIS = "solaris";
     static final String SUNOS = "sunos";
-
     // Map of OS name prefixes to their normalized values
     static final Map<String, String> OSMAP;
 
@@ -57,6 +53,8 @@ class SupportOSTypes {
         OSMAP.put(SOLARIS, SUNOS);
         OSMAP.put(SUNOS, SUNOS);
         OSMAP.put(WINDOWS, WINDOWS);
+    }
+    private SupportOSTypes() {
     }
 
 }

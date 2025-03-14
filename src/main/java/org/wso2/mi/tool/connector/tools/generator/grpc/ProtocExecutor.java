@@ -1,3 +1,21 @@
+/*
+ *  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ *  WSO2 LLC. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
 package org.wso2.mi.tool.connector.tools.generator.grpc;
 
 import java.io.File;
@@ -81,15 +99,10 @@ public class ProtocExecutor {
         Path tempDir = Files.createTempDirectory("protoc-");
         tempDir.toFile().deleteOnExit();
 
-        // 1. Download the zip
         Path zipFile = tempDir.resolve("protoc.zip");
         downloadFile(url, zipFile);
-
-        // 2. Unzip it
         unzip(zipFile, tempDir);
 
-        // 3. Find the actual protoc binary (depends on the zip structure)
-        // Usually in "bin/protoc" inside the extracted folder.
         Path binDir = tempDir.resolve("bin");
         if (!Files.isDirectory(binDir)) {
             // Maybe the zip extracted everything at the root. Check for 'protoc' at root.
@@ -112,21 +125,14 @@ public class ProtocExecutor {
      * Download the gRPC plugin for the current OS/arch, returning the absolute path
      * to the "protoc-gen-grpc-java" (or .exe on Windows) binary in a temp folder.
      */
-     static Path downloadGrpcPlugin() throws IOException {
+    static Path downloadGrpcPlugin() throws IOException {
         String url = getGrpcPluginDownloadUrl(OS_NAME, OS_ARCH);
 
-        // Create a temp dir for the plugin
         Path tempDir = Files.createTempDirectory("grpc-plugin-");
         tempDir.toFile().deleteOnExit();
-
-        // On Windows, the plugin is typically an .exe
         String fileName = OS_NAME.contains("win") ? "protoc-gen-grpc-java.exe" : "protoc-gen-grpc-java";
         Path pluginFile = tempDir.resolve(fileName);
-
-        // 1. Download the single binary
         downloadFile(url, pluginFile);
-
-        // 2. Mark executable
         pluginFile.toFile().setExecutable(true);
         return pluginFile;
     }
@@ -136,7 +142,7 @@ public class ProtocExecutor {
      */
     static boolean runProtoc(File protoc, File grpcPlugin, String protoSourceDir, String protocFile, String javaOutDir) throws IOException, InterruptedException {
         Files.createDirectories(Paths.get(javaOutDir));
-List<String> command = new ArrayList<>();
+        List<String> command = new ArrayList<>();
         command.add(protoc.getAbsolutePath());
 
         // Provide the gRPC plugin
@@ -199,7 +205,6 @@ List<String> command = new ArrayList<>();
      * Unzip the downloaded protoc archive. (Assumes it's a valid zip file.)
      */
     private static void unzip(Path zipFile, Path destDir) throws IOException {
-//        System.out.println("Unzipping " + zipFile + " to " + destDir);
         try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {

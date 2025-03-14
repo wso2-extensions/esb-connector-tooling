@@ -39,8 +39,8 @@
                                             "name": "$param.getName()",
                                             "displayName": "$param.getName()",
                                             "inputType": "stringOrExpression",
-                                            "defaultValue": "$param.getName()",
-                                            "required": "$param.isRequired()",
+                                            "defaultValue": "$param.getDefaultValue()",
+                                            "required": "",
                                             "helpTip": "$param.getName()"
                                         }
                                     }#if($foreach.hasNext),#end

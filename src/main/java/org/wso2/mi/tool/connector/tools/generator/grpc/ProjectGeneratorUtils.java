@@ -1,13 +1,13 @@
 /**
  * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
- *
+ * <p>
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
 import javax.tools.JavaCompiler;
@@ -51,13 +52,17 @@ import java.util.stream.Collectors;
 
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.capitalizeFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.deleteDirectory;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.getGetterNames;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.getSetterNames;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.lowercaseFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.HAS_RESPONSE_MODEL;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.INPUT_FIELD_METHODS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.OUTPUT_FIELD_METHODS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_COMPILE_DIRECTORY;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_101;
 
 /**
  * The VelocityConfigGenerator handles the generation of the openapi connector
@@ -66,12 +71,14 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_COM
 public class ProjectGeneratorUtils {
 
     private static final Log log = LogFactory.getLog(ProjectGeneratorUtils.class);
-    private static List<RPCService.RPCCall> operationList = new ArrayList<>();
+    private static final List<RPCService.RPCCall> operationList = new ArrayList<>();
     private static URLClassLoader classLoader;
 
-    public static void generateConnectorProject(String protoPath, String projectPath, String miVersion,
-                                                  String integrationProjectPath, VelocityEngine engine,
-                                                  VelocityContext context, String tempJavaPath) {
+    public static void generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
+                                                VelocityContext context, String tempJavaPath) {
+        String projectPath = metadata.getConnectorPath();
+        String protoPath = metadata.getProtoFilePath();
+        String miVersion = metadata.getMiVersion();
 
         String pathToConnectorDir;
         try {
@@ -91,7 +98,8 @@ public class ProjectGeneratorUtils {
             generateInitJsonFiles(pathToResourcesDir, engine, context);
             generateConnectorConfig(pathToConnectorDir, pathToResourcesDir, pathToMainDir, engine, context);
             String pathToGrpcProtocDir = pathToConnectorDir +
-                    "/src/main/java/org/wso2/carbon/" + connectorName + "connector/" + context.get("package").toString().replace(".", "/");
+                    "/src/main/java/org/wso2/carbon/" + connectorName + "connector/" +
+                    getProjectJavaPackage(context).replace(".", "/");
             // Create a Temp Directory for Compilation
             Path tempDir = Files.createTempDirectory(TEMP_COMPILE_DIRECTORY);
 
@@ -108,13 +116,12 @@ public class ProjectGeneratorUtils {
                 javaFilePaths.add(file.getKey());
                 String fileName = file.getValue();
                 if (fileName.endsWith("Grpc.java")) {
-                    context.put("javaGrpcServerFile", fileName.replace(".java",""));
+                    context.put("javaGrpcServerFile", fileName.replace(".java", ""));
                     context.put("javaGrpcServerFilePath", file.getKey());
                 } else {
-                    if(!(boolean)context.get("isJavaGrpcStubFile")) {
-                        context.put("javaGrpcStubFile", fileName.replace(".java",""));
+                    if (!(boolean) context.get("isJavaGrpcStubFile")) {
+                        context.put("javaGrpcStubFile", fileName.replace(".java", ""));
                     }
-
                 }
             }
 
@@ -132,7 +139,6 @@ public class ProjectGeneratorUtils {
             }
             int result = compiler.run(null, null, null, compileArgs);
             if (result != 0) {
-                //todo error
                 return;
             }
 
@@ -141,48 +147,90 @@ public class ProjectGeneratorUtils {
             deleteDirectory(tempDir);
 
             copyGenResources(protoPath, pathToConnectorDir, engine, context);
+            //todo check the integraiton path
+            String integrationProjectPath = projectPath;
             if (integrationProjectPath != null) {
                 copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
             }
         } catch (IOException e) {
+            log.error(GRPC_CONNECTOR_101);
         }
     }
 
     private static void generateJavaMediators(VelocityContext context) {
         RPCService.RPCCall rpcCall = (RPCService.RPCCall) context.get("rpcCall");
         //output and input message
-        String inputName = rpcCall.getOutputName();
-        String inputFileName = context.get("package") + "." + context.get("javaGrpcStubFile") + "$" +
-                capitalizeFirstLetter(inputName) ;
+        String packageName = getProjectJavaPackage(context);
+        String outputName = rpcCall.getOutputName();
+        String outputFileName;
+        if (!(Boolean) context.get("isJavaMultipleFiles")) {
+            outputFileName = packageName + "." + context.get("javaGrpcStubFile") + "$" +
+                    capitalizeFirstLetter(outputName);
+        } else {
+            outputFileName = packageName + "." + capitalizeFirstLetter(outputName);
+        }
+
+        String inputName = rpcCall.getInputName() + "$Builder";
+        String inputFileName;
+        if (!(Boolean) context.get("isJavaMultipleFiles")) {
+            inputFileName = packageName + "." + context.get("javaGrpcStubFile") + "$" +
+                    capitalizeFirstLetter(inputName);
+        } else {
+            inputFileName = packageName + "." + capitalizeFirstLetter(inputName);
+        }
+
         Class<?> outputClass = null;
+        Class<?> inputClass = null;
         try {
-            outputClass = Class.forName(inputFileName, true, classLoader);
+            outputClass = Class.forName(outputFileName, true, classLoader);
+            inputClass = Class.forName(inputFileName, true, classLoader);
         } catch (ClassNotFoundException e) {
-            //todo: error message
+            log.error("Invalid class path: " + inputFileName);
+            return;
         }
         Set<String> outputs = rpcCall.getOutput().keySet();
         Map<String, String> outputMethods = new HashMap<>();
         Method[] methods = outputClass.getMethods();
-        // Create a lookup map for faster method matching
         Map<String, Method> methodMap = Arrays.stream(methods)
                 .collect(Collectors.toMap(Method::getName, Function.identity(), (m1, m2) -> m1));
-
-        // Map each field to its getter method
         for (String fieldName : outputs) {
-            String expectedGetterName = "get" + capitalizeFirstLetter(fieldName);
-
+            String expectedGetterName = getGetterNames(rpcCall.getOutput().get(fieldName));
             if (methodMap.containsKey(expectedGetterName)) {
                 outputMethods.put(fieldName, expectedGetterName);
             }
         }
+        Set<String> inputs = rpcCall.getInput().keySet();
+        Map<String, String> inputMethods = new HashMap<>();
+        Method[] inmethods = inputClass.getDeclaredMethods();
+        Map<String, Method> inputMethodMap = Arrays.stream(inmethods)
+                .collect(Collectors.toMap(Method::getName, Function.identity(), (m1, m2) -> m1));
+
+        for (String fieldName : inputs) {
+            String expectedGetterName = getSetterNames(rpcCall.getInput().get(fieldName));
+            if (inputMethodMap.containsKey(expectedGetterName)) {
+                inputMethods.put(fieldName, expectedGetterName);
+            }
+        }
         context.put(OUTPUT_FIELD_METHODS, outputMethods);
+        context.put(INPUT_FIELD_METHODS, inputMethods);
+    }
+
+    private static String getProjectJavaPackage(VelocityContext context) {
+        String packageName;
+        if (context.containsKey("javaPackage")) {
+            packageName = context.get("javaPackage").toString();
+        } else {
+            packageName = context.get("package").toString();
+        }
+        return packageName;
     }
 
 
-    private static void generateRPCfunctions(String pathToMainDir, String pathToResourcesDir, VelocityEngine engine, VelocityContext context) throws IOException {
+    private static void generateRPCfunctions(String pathToMainDir, String pathToResourcesDir,
+                                             VelocityEngine engine, VelocityContext context) throws IOException {
         RPCService service = (RPCService) context.get(SERVICE);
         Map<String, RPCService.RPCCall> rpcCallsMap = service.getRpcCallsMap();
-        for (Map.Entry<String, RPCService.RPCCall> rpc: rpcCallsMap.entrySet()) {
+        for (Map.Entry<String, RPCService.RPCCall> rpc : rpcCallsMap.entrySet()) {
             addOperation(pathToMainDir, pathToResourcesDir, rpc.getKey(), rpc.getValue(), engine, context);
         }
 
@@ -227,9 +275,11 @@ public class ProjectGeneratorUtils {
         createAssemblyDirectory(pathToConnectorDir + "/src/main/assembly");
 
         // Copy connector files
-        try (InputStream staticFilesStream = classLoader.getResourceAsStream("connector-files/src/main/assembly/assemble-connector.xml")) {
+        try (InputStream staticFilesStream = classLoader.getResourceAsStream(
+                "connector-files/src/main/assembly/assemble-connector.xml")) {
             if (staticFilesStream != null) {
-                Files.copy(staticFilesStream, Paths.get(pathToConnectorDir + "/src/main/assembly/assemble-connector.xml"), StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(staticFilesStream, Paths.get(pathToConnectorDir +
+                        "/src/main/assembly/assemble-connector.xml"), StandardCopyOption.REPLACE_EXISTING);
             }
         }
         // Determine the template based on the auth type
@@ -256,7 +306,6 @@ public class ProjectGeneratorUtils {
 
     private static void mergeVelocityTemplate(String outputFile, String template, VelocityEngine velocityEngine,
                                               VelocityContext context) throws IOException {
-
         File file = new File(outputFile);
         Writer writer = new FileWriter(file);
         velocityEngine.mergeTemplate(template, "UTF-8", context, writer);
@@ -323,15 +372,15 @@ public class ProjectGeneratorUtils {
             throws IOException {
 
         String outputFile = pathToConnectorDir + "/docs/config.md";
-        String template = "templates/md/config_template.vm";
+        String template = "templates/grpc/md/config_template.vm";
         mergeVelocityTemplate(outputFile, template, engine, context);
 
         outputFile = pathToConnectorDir + "/docs/operations.md";
-        template = "templates/md/operations_template.vm";
+        template = "templates/grpc/md/operations_template.vm";
         mergeVelocityTemplate(outputFile, template, engine, context);
 
         outputFile = pathToConnectorDir + "/README.md";
-        template = "templates/md/readme_template.vm";
+        template = "templates/grpc/md/readme_template.vm";
         mergeVelocityTemplate(outputFile, template, engine, context);
     }
 
@@ -347,10 +396,10 @@ public class ProjectGeneratorUtils {
         mergeVelocityTemplate(javaMediator, "templates/grpc/java/rpc_java_mediator.vm", engine, context);
         mergeVelocityTemplate(synapseFileName, "templates/grpc/synapse/rpc_function.vm", engine, context);
         mergeVelocityTemplate(uischemaFileName, "templates/grpc/uischema/operation_template.vm", engine, context);
-        if (context.get("hasResponseModel").equals("true")) {
+        if ((Boolean) context.get(HAS_RESPONSE_MODEL)) {
             String outputSchemaFileName = pathToResourcesDir + "/outputschema/" + operationName + ".json";
             mergeVelocityTemplate(outputSchemaFileName,
-                    "templates/outputschema/operation_response_schema_template.vm", engine, context);
+                    "templates/grpc/outputschema/operation_response_schema_template.vm", engine, context);
         }
     }
 
@@ -396,7 +445,6 @@ public class ProjectGeneratorUtils {
         File dest = new File(destinationDir);
 
         if (!src.exists()) {
-            System.out.println("Source directory does not exist: " + sourceDir);
             return;
         }
 
@@ -411,15 +459,11 @@ public class ProjectGeneratorUtils {
                         try {
                             Path relativePath = src.toPath().relativize(source);
                             Path target = dest.toPath().resolve(relativePath);
-
                             Files.createDirectories(target.getParent());
-
                             Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                            System.out.println("Copied: " + source + " to " + target);
-
                             Files.delete(source);
                         } catch (IOException e) {
-                            System.err.println("Error processing file: " + source + " - " + e.getMessage());
+                            log.error("Error processing file: " + source + " - " + e.getMessage());
                         }
                     });
 
@@ -431,13 +475,10 @@ public class ProjectGeneratorUtils {
                             if (Files.isDirectory(path)) {
                                 if (Files.list(path).count() == 0) {
                                     Files.delete(path);
-                                    System.out.println("Deleted directory: " + path);
-                                } else {
-                                    System.out.println("Directory not empty, skipping: " + path);
                                 }
                             }
                         } catch (IOException e) {
-                            System.err.println("Error deleting directory: " + path + " - " + e.getMessage());
+                            log.error("Error deleting directory: " + path + " - " + e.getMessage());
                         }
                     });
 
@@ -445,14 +486,13 @@ public class ProjectGeneratorUtils {
                 if (Files.list(src.toPath()).count() == 0) {
                     Files.delete(src.toPath());
                 } else {
-                    System.out.println("Source directory not empty after processing, cannot delete: " + src.toPath());
+                    log.error("Source directory not empty after processing, cannot delete: " + src.toPath());
                 }
             } catch (IOException e) {
-                System.err.println("Error deleting source directory: " + src.toPath() + " - " + e.getMessage());
+                log.error("Error deleting source directory: " + src.toPath() + " - " + e.getMessage());
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }
     }
-
 }

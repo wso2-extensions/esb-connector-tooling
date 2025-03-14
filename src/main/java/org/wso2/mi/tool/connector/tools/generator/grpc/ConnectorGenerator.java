@@ -1,53 +1,52 @@
-/**
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com).
+/*
+ *  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  *
- * WSO2 LLC. licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
- * in compliance with the License.
- * You may obtain a copy of the License at
+ *  WSO2 LLC. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations
- * under the License.
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
  */
+
 package org.wso2.mi.tool.connector.tools.generator.grpc;
 
 import com.google.protobuf.DescriptorProtos;
-import org.apache.velocity.VelocityContext;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Writer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_101;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ProjectGeneratorUtils.generateConnectorProject;
 
 /**
  * Generates the connector using the Protobuf spec.
  */
 public class ConnectorGenerator {
-//    private static final Log LOG = LogFactory.getLog(ConnectorGenerator.class);
+    private static final Log LOG = LogFactory.getLog(ConnectorGenerator.class);
 
     private static final VelocityEngine velocityEngine = new VelocityEngine();
 
@@ -56,26 +55,23 @@ public class ConnectorGenerator {
      *
      * @param args The arguments.
      */
-    public static void main(String[] args)  {
-//        if (args.length < 3 || args.length > 4) {
-//            throw new IllegalArgumentException("Usage: <protobuffile> <output_dir_JavaFiles> <grpc_java> [miVersion]");
+    public static void main(String[] args) {
+//        if (args.length < 2 || args.length > 3) {
+//            throw new IllegalArgumentException("Usage: <protobuffile> [miVersion]");
 //        }
 //        String protoFile = args[0];
 //        // hardcode
-//        String outputJavaDir = args[1];
-//        String grpcJavaDir = args[2];
-//        String miVersion = args.length == 4 ? args[3] : "4.4.0";
+//        String miVersion = args.length == 2 ? args[1] : "4.4.0";
 //
-//        String connectorPath = "./";
+        String connectorPath = "./";
         try {
 //        if (!protoFile.endsWith("**.proto")) {
 //            throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_100.getDescription());
 //        }
-            generateConnector("/Users/hansaninissanka/Desktop/GRPC/Protofiles/bookcpy.proto", "/Users/hansaninissanka/Desktop/GRPC/",
-                    "4.4.0", "/Users/hansaninissanka/Desktop/GRPC/");
+//            generateConnector(protoFile, connectorPath, miVersion);
+            generateConnector("/Users/hansaninissanka/Desktop/GRPC/Protofiles/test_pub.proto", connectorPath, "4.4.0");
         } catch (IOException | InterruptedException e) {
-            System.out.println(e);
-            throw new RuntimeException(e);
+            LOG.error(GRPC_CONNECTOR_101);
         }
     }
 
@@ -85,10 +81,9 @@ public class ConnectorGenerator {
      * @param protoFile The OpenAPI spec.
      * @param connectorPath The output directory.
      * @param miVersion The MI version (default is 4.4.0 if not provided).
-     * @param projectHome The Integration project home.
      * @return The path to the generated connector.
      */
-    public static void generateConnector(String protoFile, String connectorPath, String miVersion, String projectHome)
+    public static void generateConnector(String protoFile, String connectorPath, String miVersion)
             throws IOException, InterruptedException {
 
         // 1. Download + Extract protoc
@@ -109,11 +104,16 @@ public class ConnectorGenerator {
                 protoFileName,
                 tempOutputDir
         );
-        System.out.println("Protoc execution " + (success ? "succeeded" : "failed"));
+        LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
         FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
         VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
-        generateConnectorProject(protoFileName, projectHome, miVersion, connectorPath, velocityEngine,
-                velocityForProtoFile, tempOutputDir);
+        CodeGeneratorMetaData metaData = new CodeGeneratorMetaData.Builder()
+                .withMIVersion(miVersion)
+                .withProtoFilePath(protoFile)
+                .withConnectorPath(connectorPath)
+                .withProtoFileName(protoFileName)
+                .build();
+        generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir);
 
     }
 
@@ -125,6 +125,10 @@ public class ConnectorGenerator {
             String name = fileProto.getName();
             String javaOuterClassname = fileProto.getOptions().getJavaOuterClassname();
             boolean javaMultipleFiles = fileProto.getOptions().getJavaMultipleFiles();
+            String javaPackage = fileProto.getOptions().getJavaPackage();
+            if (!javaPackage.isEmpty()) {
+                context.put("javaPackage", javaPackage);
+            }
             context.put("isJavaMultipleFiles", javaMultipleFiles);
             if (javaOuterClassname != null && !javaOuterClassname.isEmpty()) {
                 context.put("javaGrpcStubFile", javaOuterClassname);
@@ -146,14 +150,14 @@ public class ConnectorGenerator {
                                     descriptorProto -> descriptorProto));
 
             List<DescriptorProtos.ServiceDescriptorProto> serviceList = fileProto.getServiceList();
-            for (DescriptorProtos.ServiceDescriptorProto service: serviceList) {
+            for (DescriptorProtos.ServiceDescriptorProto service : serviceList) {
                 String serviceName = service.getName();
                 String resolvedConnectorName = serviceName.toLowerCase().replace(" ", "");
                 updateConnectorMetaInfo(context, serviceName, resolvedConnectorName);
 
                 List<DescriptorProtos.MethodDescriptorProto> methodList = service.getMethodList();
                 Map<String, RPCService.RPCCall> rcpMap = new HashMap<>();
-                for (DescriptorProtos.MethodDescriptorProto method: methodList) {
+                for (DescriptorProtos.MethodDescriptorProto method : methodList) {
                     populateRPCcall(fileProto, messageTypeMap, rcpMap, method);
                 }
                 RPCService rpcService = new RPCService.Builder()
@@ -162,6 +166,7 @@ public class ConnectorGenerator {
                         .build();
                 context.put(SERVICE, rpcService);
             }
+            break;
         }
         return context;
     }
@@ -203,7 +208,7 @@ public class ConnectorGenerator {
         DescriptorProtos.DescriptorProto descriptorProto = messageTypeMap.get(result);
         List<DescriptorProtos.FieldDescriptorProto> fieldList = descriptorProto.getFieldList();
         if (!fieldList.isEmpty()) {
-            for (DescriptorProtos.FieldDescriptorProto field: fieldList) {
+            for (DescriptorProtos.FieldDescriptorProto field : fieldList) {
                 inputFields.put(field.getName(), field);
             }
         }

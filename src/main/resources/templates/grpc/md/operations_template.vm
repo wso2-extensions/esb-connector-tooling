@@ -1,0 +1,72 @@
+#set ( $single_hash = '#' )
+#set ( $double_hash = '##' )
+#set ( $triple_hash = '###' )
+$single_hash Working with $connectorName Connector
+
+$double_hash Overview
+
+| Operation        | Description |
+| ------------- |-------------|
+#foreach($operation in $service.getRpcCallsMap().keySet())
+| [${operation}](${single_hash}$operation.getDocumentationLink())| ${operation.getDescription()} |
+#end
+
+$double_hash Operation Details
+
+This section provides details on each of the operations.
+
+#foreach($operation in $operations)
+$triple_hash $operation.getDisplayName()
+
+${operation.getDescription()}
+
+**$operation.getName()**
+
+#set($parameterList = $operation.getPathParameters())
+#set($response = $parameterList.addAll($operation.getQueryParameters()))
+#set($response = $parameterList.addAll($operation.getHeaderParameters()))
+#set($response = $parameterList.addAll($operation.getRequestParameters()))
+```xml
+<${connectorName}.$operation.getName()>
+#foreach($parameter in $parameterList)
+    <$parameter.getParameterName()>{$ctx:$parameter.getParameterName()}</$parameter.getParameterName()>
+#end
+</${connectorName}.$operation.getName()>
+```
+
+**Properties**
+
+#foreach($parameter in $parameterList)
+* $parameter.getParameterName(): $parameter.getDescription()
+#if ($parameter.getInnerSchema())
+This is parameter is of a complex type. Use the below schema to build the parameter and set it as a property to this
+parameter.
+```json
+$parameter.getInnerSchema()
+```
+#end
+#end
+#if ($operation.getRequestSchema())
+
+**Request Schema**
+
+This operation contains a composed schema as the request schema. The request payload for this operation has to be built
+using the following schema.
+
+```json
+$operation.getRequestSchema()
+```
+#end
+#if ($operation.isUnhandledContentType())
+
+**Request Schema**
+
+This operation contains unhandled media type/s in the request body. Please construct the payload accordingl to the
+desired media type and set the following headers accordingly.
+
+```xml
+<property name="messageType" value="{MEDIA_TYPE}" scope="axis2"/>
+<property name="ContentType" value="{MEDIA_TYPE}" scope="axis2"/>
+```
+#end
+#end

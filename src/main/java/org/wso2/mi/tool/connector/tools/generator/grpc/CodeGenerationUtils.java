@@ -1,3 +1,21 @@
+/*
+ *  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+ *
+ *  WSO2 LLC. licenses this file to you under the Apache License,
+ *  Version 2.0 (the "License"); you may not use this file except
+ *  in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing,
+ *  software distributed under the License is distributed on an
+ *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ *  KIND, either express or implied.  See the License for the
+ *  specific language governing permissions and limitations
+ *  under the License.
+ */
+
 package org.wso2.mi.tool.connector.tools.generator.grpc;
 
 import com.google.protobuf.DescriptorProtos;
@@ -49,4 +67,65 @@ public class CodeGenerationUtils {
                 });
     }
 
+    public static String getGetterNames(DescriptorProtos.FieldDescriptorProto field) {
+        String fieldName = field.getName();
+        String camelCaseName = toCamelCase(fieldName);
+
+        if (field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL) {
+            return "get" + camelCaseName;
+        }
+        if (field.getLabel() == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED) {
+            return "get" + camelCaseName + "List";
+        }
+
+        if (isMapField(field)) {
+            return "get" + camelCaseName + "Map";
+        }
+        if (field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE) {
+            return "get" + camelCaseName;
+        }
+        return "get" + camelCaseName;
+    }
+
+    public static String getSetterNames(DescriptorProtos.FieldDescriptorProto field) {
+        String fieldName = field.getName();
+        String camelCaseName = toCamelCase(fieldName);
+        if (field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_BOOL) {
+            return "set" + camelCaseName;
+        }
+        if (isMapField(field)) {
+            return "putAll" + camelCaseName;
+        }
+        if (field.getLabel() == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED) {
+            return "addAll" + camelCaseName;
+            // "set" + camelCaseName + "List(List<T> values)",  // Set full list
+            // "set" + camelCaseName + "(int index, T value)", // Set element at index
+        }
+        if (field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE) {
+            return "set" + camelCaseName;
+        }
+        return "set" + camelCaseName;
+    }
+
+    private static String toCamelCase(String fieldName) {
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = true;
+
+        for (char c : fieldName.toCharArray()) {
+            if (c == '_') {
+                capitalizeNext = true;
+            } else if (capitalizeNext) {
+                result.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+    private static boolean isMapField(DescriptorProtos.FieldDescriptorProto field) {
+        return field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE &&
+                field.getLabel() == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED &&
+                field.getTypeName().endsWith("Entry");
+    }
 }
