@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
@@ -36,11 +37,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.getTypeName;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.loadDescriptorSet;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_101;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.ProjectGeneratorUtils.generateConnectorProject;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.ProjectGeneratorUtils.generateConnectorProject;
 
 /**
  * Generates the connector using the Protobuf spec.
@@ -56,22 +57,22 @@ public class ConnectorGenerator {
      * @param args The arguments.
      */
     public static void main(String[] args) {
-//        if (args.length < 2 || args.length > 3) {
-//            throw new IllegalArgumentException("Usage: <protobuffile> [miVersion]");
-//        }
-//        String protoFile = args[0];
-//        // hardcode
-//        String miVersion = args.length == 2 ? args[1] : "4.4.0";
-//
-        String connectorPath = "./";
+        if (args.length < 3 || args.length > 4) {
+            throw new IllegalArgumentException("Usage: <protobuffile> <outputpath> [miVersion]");
+        }
+        String protoFile = args[0];
+        String connectorPath = args[1];
+        String miVersion = args.length == 3 ? args[2] : "4.4.0";
+
         try {
-//        if (!protoFile.endsWith("**.proto")) {
-//            throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_100.getDescription());
-//        }
-//            generateConnector(protoFile, connectorPath, miVersion);
-            generateConnector("/Users/hansaninissanka/Desktop/GRPC/Protofiles/test_pub.proto", connectorPath, "4.4.0");
+        if (!protoFile.endsWith(".proto")) {
+            throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_100.getDescription());
+        }
+            generateConnector(protoFile, connectorPath, miVersion);
         } catch (IOException | InterruptedException e) {
             LOG.error(GRPC_CONNECTOR_101);
+        } catch (ConnectorGenException e) {
+            LOG.error(e.getMessage());
         }
     }
 
@@ -158,7 +159,11 @@ public class ConnectorGenerator {
                 List<DescriptorProtos.MethodDescriptorProto> methodList = service.getMethodList();
                 Map<String, RPCService.RPCCall> rcpMap = new HashMap<>();
                 for (DescriptorProtos.MethodDescriptorProto method : methodList) {
-                    populateRPCcall(fileProto, messageTypeMap, rcpMap, method);
+                    if (method.getServerStreaming() || method.getClientStreaming()) {
+                        LOG.warn(ErrorMessages.GRPC_CONNECTOR_102.format(method.getName()));
+                    } else {
+                        populateRPCcall(fileProto, messageTypeMap, rcpMap, method);
+                    }
                 }
                 RPCService rpcService = new RPCService.Builder()
                         .serviceName(serviceName)

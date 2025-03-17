@@ -20,7 +20,10 @@ package org.wso2.mi.tool.connector.tools.generator.grpc;
 
 public enum ErrorMessages {
     GRPC_CONNECTOR_100("GRPC_CONNECTOR_100", "Provide proto file"),
-    GRPC_CONNECTOR_101("GRPC_CONNECTOR_101", "Error while generating the grpc connector");
+    GRPC_CONNECTOR_101("GRPC_CONNECTOR_101", "Error while generating the grpc connector"),
+    GRPC_CONNECTOR_102("GRPC_CONNECTOR_102", "Streaming is currently not supported by the tool. " +
+            "Therefore, the RPC method `%s` will not be supported in the given connector.");
+
     private final String code;
     private final String description;
 
@@ -35,5 +38,9 @@ public enum ErrorMessages {
 
     public String getDescription() {
         return description;
+    }
+
+    public String format(Object... args) {
+        return String.format(description, args);
     }
 }

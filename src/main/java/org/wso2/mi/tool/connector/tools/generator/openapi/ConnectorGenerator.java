@@ -26,22 +26,6 @@ import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ProjectGenerator
 public class ConnectorGenerator {
 
     /**
-     * Main method to generate the connector.
-     *
-     * @param args The arguments.
-     */
-    public static void main(String[] args) {
-        if (args.length < 2 || args.length > 3) {
-            throw new IllegalArgumentException("Usage: <openApiSpec> <outputDir> [miVersion]");
-        }
-        String openApiSpec = args[0];
-        String outputDir = args[1];
-        String miVersion = args.length == 3 ? args[2] : "4.4.0";
-
-        generateConnector(openApiSpec, outputDir, miVersion, null);
-    }
-
-    /**
      * Generates the connector using the OpenAPI spec.
      *
      * @param openApiSpec The OpenAPI spec.

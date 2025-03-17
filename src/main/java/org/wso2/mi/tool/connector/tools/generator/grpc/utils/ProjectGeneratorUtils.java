@@ -15,7 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.wso2.mi.tool.connector.tools.generator.grpc;
+package org.wso2.mi.tool.connector.tools.generator.grpc.utils;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
@@ -51,11 +51,11 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.capitalizeFirstLetter;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.deleteDirectory;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.getGetterNames;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.getSetterNames;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.CodeGenerationUtils.lowercaseFirstLetter;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.capitalizeFirstLetter;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.deleteDirectory;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getGetterNames;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getSetterNames;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.lowercaseFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.HAS_RESPONSE_MODEL;
@@ -72,7 +72,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC
  */
 public class ProjectGeneratorUtils {
 
-    private static final Log log = LogFactory.getLog(ProjectGeneratorUtils.class);
+    private static final Log LOG = LogFactory.getLog(ProjectGeneratorUtils.class);
     private static final List<RPCService.RPCCall> operationList = new ArrayList<>();
     private static URLClassLoader classLoader;
 
@@ -155,7 +155,7 @@ public class ProjectGeneratorUtils {
                 copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
             }
         } catch (IOException e) {
-            log.error(GRPC_CONNECTOR_101);
+            LOG.error(GRPC_CONNECTOR_101);
         }
     }
 
@@ -187,7 +187,7 @@ public class ProjectGeneratorUtils {
             outputClass = Class.forName(outputFileName, true, classLoader);
             inputClass = Class.forName(inputFileName, true, classLoader);
         } catch (ClassNotFoundException e) {
-            log.error("Invalid class path: " + inputFileName);
+            LOG.error("Invalid class path: " + inputFileName);
             return;
         }
         Set<String> outputs = rpcCall.getOutput().keySet();
@@ -429,7 +429,7 @@ public class ProjectGeneratorUtils {
                 } else {
                     Files.copy(source.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
-                log.info("Copied Maven wrapper artifact: " + fileName);
+                LOG.info("Copied Maven wrapper artifact: " + fileName);
             }
         }
     }
@@ -444,7 +444,7 @@ public class ProjectGeneratorUtils {
                     Files.copy(srcPath, destPath, StandardCopyOption.REPLACE_EXISTING);
                 }
             } catch (IOException e) {
-                log.error("Error occurred while copying directory: " + e.getMessage());
+                LOG.error("Error occurred while copying directory: " + e.getMessage());
             }
         });
     }
@@ -472,7 +472,7 @@ public class ProjectGeneratorUtils {
                             Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
                             Files.delete(source);
                         } catch (IOException e) {
-                            log.error("Error processing file: " + source + " - " + e.getMessage());
+                            LOG.error("Error processing file: " + source + " - " + e.getMessage());
                         }
                     });
 
@@ -487,7 +487,7 @@ public class ProjectGeneratorUtils {
                                 }
                             }
                         } catch (IOException e) {
-                            log.error("Error deleting directory: " + path + " - " + e.getMessage());
+                            LOG.error("Error deleting directory: " + path + " - " + e.getMessage());
                         }
                     });
 
@@ -495,13 +495,13 @@ public class ProjectGeneratorUtils {
                 if (Files.list(src.toPath()).count() == 0) {
                     Files.delete(src.toPath());
                 } else {
-                    log.error("Source directory not empty after processing, cannot delete: " + src.toPath());
+                    LOG.error("Source directory not empty after processing, cannot delete: " + src.toPath());
                 }
             } catch (IOException e) {
-                log.error("Error deleting source directory: " + src.toPath() + " - " + e.getMessage());
+                LOG.error("Error deleting source directory: " + src.toPath() + " - " + e.getMessage());
             }
         } catch (IOException e) {
-            log.error(e.getMessage());
+            LOG.error(e.getMessage());
         }
     }
 }

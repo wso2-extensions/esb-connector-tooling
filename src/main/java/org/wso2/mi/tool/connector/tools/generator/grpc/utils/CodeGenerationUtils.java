@@ -16,7 +16,7 @@
  *  under the License.
  */
 
-package org.wso2.mi.tool.connector.tools.generator.grpc;
+package org.wso2.mi.tool.connector.tools.generator.grpc.utils;
 
 import com.google.protobuf.DescriptorProtos;
 

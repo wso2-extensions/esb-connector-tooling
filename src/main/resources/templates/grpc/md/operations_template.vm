@@ -22,7 +22,7 @@ ${operation.getDescription()}
 
 **$operation.getName()**
 
-#set($parameterList = $operation.getPathParameters())
+#set($parameterList = $operation.getInput())
 #set($response = $parameterList.addAll($operation.getQueryParameters()))
 #set($response = $parameterList.addAll($operation.getHeaderParameters()))
 #set($response = $parameterList.addAll($operation.getRequestParameters()))
