@@ -98,8 +98,6 @@ public class CodeGenerationUtils {
         }
         if (field.getLabel() == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED) {
             return "addAll" + camelCaseName;
-            // "set" + camelCaseName + "List(List<T> values)",  // Set full list
-            // "set" + camelCaseName + "(int index, T value)", // Set element at index
         }
         if (field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE) {
             return "set" + camelCaseName;

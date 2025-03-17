@@ -13,7 +13,9 @@ import ${packageName}.${javaGrpcServerFile};
 import ${packageName}.${rpcCall.getInputName()};
 import ${packageName}.${rpcCall.getOutputName()};
 
-$importStatements
+#if($methodsWithArray && !$methodsWithArray.isEmpty() && $methodsWithArray.contains($rpcCall.getRpcCallName()))
+import java.util.Arrays;
+#end
 import org.apache.synapse.MessageContext;
 
 import io.grpc.ManagedChannel;
@@ -208,7 +210,6 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
              #foreach($entry in $inputFMethods.entrySet())
              #set($isArray = $entry.getValue().indexOf("All") > -1)
              #if($isArray)
-                 #set($importStatements = "import java.util.Arrays;")
                  .${entry.getValue()}(Arrays.asList($entry.getKey()))
              #else
                  .${entry.getValue()}($entry.getKey())

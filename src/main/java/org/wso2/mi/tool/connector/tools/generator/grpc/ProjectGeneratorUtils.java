@@ -44,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACT
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.HAS_RESPONSE_MODEL;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.INPUT_FIELD_METHODS;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.METHODS_WITH_ARRAY;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.OUTPUT_FIELD_METHODS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_COMPILE_DIRECTORY;
@@ -179,8 +181,8 @@ public class ProjectGeneratorUtils {
             inputFileName = packageName + "." + capitalizeFirstLetter(inputName);
         }
 
-        Class<?> outputClass = null;
-        Class<?> inputClass = null;
+        Class<?> outputClass;
+        Class<?> inputClass;
         try {
             outputClass = Class.forName(outputFileName, true, classLoader);
             inputClass = Class.forName(inputFileName, true, classLoader);
@@ -207,6 +209,17 @@ public class ProjectGeneratorUtils {
 
         for (String fieldName : inputs) {
             String expectedGetterName = getSetterNames(rpcCall.getInput().get(fieldName));
+            if(expectedGetterName.startsWith("addAll")) {
+                if (context.containsKey(METHODS_WITH_ARRAY)) {
+                    Set<String> methodsSet = (Set<String>) context.get(METHODS_WITH_ARRAY);
+                    methodsSet.add(rpcCall.getRpcCallName());
+                    context.put(METHODS_WITH_ARRAY, methodsSet);
+                } else {
+                    Set<String> methodsWithArray = new HashSet<>();
+                    methodsWithArray.add(rpcCall.getRpcCallName());
+                    context.put(METHODS_WITH_ARRAY, methodsWithArray);
+                }
+            }
             if (inputMethodMap.containsKey(expectedGetterName)) {
                 inputMethods.put(fieldName, expectedGetterName);
             }
@@ -401,10 +414,6 @@ public class ProjectGeneratorUtils {
             mergeVelocityTemplate(outputSchemaFileName,
                     "templates/grpc/outputschema/operation_response_schema_template.vm", engine, context);
         }
-    }
-
-    private static String makePackageNameCompatible(String name) {
-        return name.replaceAll("[^a-zA-Z0-9]", "_").toLowerCase();
     }
 
     private static void copyMavenArtifacts(String pathToConnectorDir, String integrationProjectPath) throws IOException {
