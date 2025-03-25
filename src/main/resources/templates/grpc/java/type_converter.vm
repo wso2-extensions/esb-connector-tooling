@@ -1,13 +1,39 @@
+/*
+*  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
+*
+*  WSO2 LLC. licenses this file to you under the Apache License,
+*  Version 2.0 (the "License"); you may not use this file except
+*  in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing,
+*  software distributed under the License is distributed on an
+*  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+*  KIND, either express or implied.  See the License for the
+*  specific language governing permissions and limitations
+*  under the License.
+*/
+
 package org.wso2.carbon.${connectorName}connector;
+
+import com.google.protobuf.ByteString;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Utility class for converting String values to various Java types, including arrays and objects.
@@ -60,16 +86,15 @@ public class TypeConverter {
                 return (T) Base64.getDecoder().decode(value);
             }
 
-            // Handle Object (User-Defined Class)
-            if (Object.class.equals(targetType) || !targetType.isPrimitive()) {
-                return (T) convertToObject(value, targetType);
-            }
-
             // Handle Arrays
             if (targetType.isArray()) {
                 return (T) convertToArray(value, targetType.getComponentType());
             }
 
+            // Handle Object (User-Defined Class)
+            if (Object.class.equals(targetType) || !targetType.isPrimitive()) {
+                return (T) convertToObject(value, targetType);
+            }
         } catch (Exception e) {
             System.err.println("Error converting '" + value + "' to " + targetType.getName() + ": " + e.getMessage());
         }
@@ -115,24 +140,296 @@ public class TypeConverter {
         }
 
         // Handle Object[] for user-defined classes
-        return Arrays.stream(parts).map(part -> convertToObject(part, componentType)).toArray(size -> (Object[]) Array.newInstance(componentType, size));
+        return convertToObjects(value, componentType).toArray((Object[]) Array.newInstance(componentType, 0));
     }
 
-    /**
-     * Converts a String value to an instance of a user-defined class.
-     *
-     * @param value The String value to convert
-     * @param targetType The Class representing the target type
-     * @return The converted object, or null if conversion fails
-     */
-    private static Object convertToObject(String value, Class<?> targetType) {
+    private static List<Object> convertToObjects(String value, Class<?> targetType) {
+        List<Object> convertedObjects = new ArrayList<>();
+        List<Map<String, String>> objects = parseJsonLikeString(value);
+
         try {
-            // Check if the class has a constructor that takes a String argument
-            Constructor<?> constructor = targetType.getDeclaredConstructor(String.class);
-            return constructor.newInstance(value);
+            // Look for the Builder nested class
+            Class<?> builderClass = null;
+            for (Class<?> nestedClass : targetType.getDeclaredClasses()) {
+                if (nestedClass.getSimpleName().equals("Builder")) {
+                    builderClass = nestedClass;
+                    break;
+                }
+            }
+
+            if (builderClass != null) {
+                Method builderCreationMethod = null;
+                try {
+                    builderCreationMethod = targetType.getMethod("newBuilder");
+                } catch (NoSuchMethodException e) {
+                    for (Method method : targetType.getMethods()) {
+                        if ((method.getName().equals("builder") ||
+                                method.getName().startsWith("newBuilder")) &&
+                                Modifier.isStatic(method.getModifiers()) &&
+                                method.getReturnType() == builderClass) {
+                            builderCreationMethod = method;
+                            break;
+                        }
+                    }
+                }
+
+                if (builderCreationMethod != null) {
+                    for (Map<String, String> object : objects) {
+                        Object builder = builderCreationMethod.invoke(null);
+
+                        for (String key : object.keySet()) {
+                            Method setterMethod = findSetterMethod(builderClass, key);
+                            if (setterMethod != null) {
+                                Object kValue = object.get(key);
+                                Class<?> expectedType = setterMethod.getParameterTypes()[0];
+
+                                if (value != null && !expectedType.isAssignableFrom(kValue.getClass())) {
+                                    if (expectedType == Integer.class || expectedType == int.class) {
+                                        kValue = Integer.parseInt(kValue.toString());
+                                    } else if (expectedType == Long.class || expectedType == long.class) {
+                                        kValue = Long.parseLong(kValue.toString());
+                                    } else if (expectedType == Double.class || expectedType == double.class) {
+                                        kValue = Double.parseDouble(kValue.toString());
+                                    } else if (expectedType == Boolean.class || expectedType == boolean.class) {
+                                        kValue = Boolean.parseBoolean(kValue.toString());
+                                    } else if (expectedType == String.class) {
+                                        kValue = kValue.toString();
+                                    }else if (expectedType == ByteString.class) {
+                                        kValue = ByteString.copyFromUtf8((String) kValue);
+                                    } else {
+                                        throw new IllegalArgumentException("Unsupported type conversion for: " + expectedType);
+                                    }
+                                }
+
+                                builder = setterMethod.invoke(builder, kValue);
+                            }
+                        }
+
+                        Method buildMethod = builderClass.getMethod("build");
+                        Object builtObject = buildMethod.invoke(builder);
+                        convertedObjects.add(builtObject);
+                    }
+                }
+            }
+
+            return convertedObjects;
+
         } catch (Exception e) {
-            System.err.println("Error converting '" + value + "' to " + targetType.getName() + ": " + e.getMessage());
+            System.err.println("Error converting events to " + targetType.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            return convertedObjects;
+        }
+    }
+
+    private static Method findSetterMethod(Class<?> builderClass, String fieldName) {
+        for (Method method : builderClass.getMethods()) {
+            if (method.getName().equalsIgnoreCase("set" + normalize(fieldName)) ||
+                    method.getName().equalsIgnoreCase("with" + normalize(fieldName))) {
+                if (method.getReturnType() == builderClass &&
+                        method.getParameterTypes().length == 1) {
+                    return method;
+                }
+            }
         }
         return null;
+    }
+
+    private static String normalize(String input) {
+        return input.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
+    }
+
+    private static Object convertToObject(String value, Class<?> targetType) {
+        try {
+            Class<?> builderClass = null;
+            for (Class<?> nestedClass : targetType.getDeclaredClasses()) {
+                if (nestedClass.getSimpleName().equals("Builder")) {
+                    builderClass = nestedClass;
+                    break;
+                }
+            }
+
+            if (builderClass != null) {
+                Method builderCreationMethod = null;
+                try {
+                    builderCreationMethod = targetType.getMethod("newBuilder");
+                } catch (NoSuchMethodException e) {
+                    for (Method method : targetType.getMethods()) {
+                        if ((method.getName().equals("builder") ||
+                                method.getName().startsWith("newBuilder")) &&
+                                Modifier.isStatic(method.getModifiers()) &&
+                                method.getReturnType() == builderClass) {
+                            builderCreationMethod = method;
+                            break;
+                        }
+                    }
+                }
+
+                if (builderCreationMethod != null) {
+                    Object builder = builderCreationMethod.invoke(null);
+
+                    Method valueMethod = null;
+                    for (Method method : builderClass.getMethods()) {
+                        if (method.getParameterTypes().length == 1 &&
+                                method.getParameterTypes()[0] == String.class &&
+                                method.getReturnType() == builderClass) {
+                            valueMethod = method;
+                            break;
+                        }
+                    }
+
+                    if (valueMethod != null) {
+                        builder = valueMethod.invoke(builder, value);
+
+                        Method buildMethod = builderClass.getMethod("build");
+                        return buildMethod.invoke(builder);
+                    }
+                }
+            }
+
+            Constructor<?> constructor = targetType.getDeclaredConstructor(String.class);
+            constructor.setAccessible(true);
+            return constructor.newInstance(value);
+
+        } catch (Exception e) {
+            System.err.println("Error converting '" + value + "' to " + targetType.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static List<Map<String, String>> parseJsonLikeString(String jsonLikeString) {
+        List<Map<String, String>> resultList = new ArrayList<>();
+
+        try {
+            // Remove leading and trailing whitespace and brackets
+            jsonLikeString = jsonLikeString.trim();
+            if (jsonLikeString.startsWith("[")) {
+                jsonLikeString = jsonLikeString.substring(1);
+            }
+            if (jsonLikeString.endsWith("]")) {
+                jsonLikeString = jsonLikeString.substring(0, jsonLikeString.length() - 1);
+            }
+
+            // Split the string into individual object strings
+            List<String> objectStrings = splitJsonObjects(jsonLikeString);
+
+            // Parse each object string
+            for (String objectString : objectStrings) {
+                Map<String, String> objectMap = parseJsonObject(objectString);
+                if (!objectMap.isEmpty()) {
+                    resultList.add(objectMap);
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error parsing JSON-like string: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return resultList;
+    }
+
+    private static List<String> splitJsonObjects(String input) {
+        List<String> objects = new ArrayList<>();
+        int bracketCount = 0;
+        StringBuilder currentObject = new StringBuilder();
+
+        for (char c : input.toCharArray()) {
+            if (c == '{') {
+                bracketCount++;
+                currentObject.append(c);
+            } else if (c == '}') {
+                bracketCount--;
+                currentObject.append(c);
+
+                if (bracketCount == 0) {
+                    String objectStr = currentObject.toString().trim();
+                    if (!objectStr.isEmpty()) {
+                        objects.add(objectStr);
+                    }
+                    currentObject = new StringBuilder();
+                }
+            } else if (bracketCount > 0 || (c != ',' && !Character.isWhitespace(c))) {
+                currentObject.append(c);
+            }
+        }
+
+        if (currentObject.length() > 0) {
+            String lastObjectStr = currentObject.toString().trim();
+            if (!lastObjectStr.isEmpty()) {
+                objects.add(lastObjectStr);
+            }
+        }
+
+        return objects;
+    }
+
+    private static Map<String, String> parseJsonObject(String objectString) {
+        Map<String, String> objectMap = new HashMap<>();
+
+        try {
+            // Remove outer braces
+            objectString = objectString.trim().replaceFirst("^\\{", "").replaceFirst("\\}$", "");
+
+            // Split by comma, handling nested structures
+            List<String> keyValuePairs = splitKeyValuePairs(objectString);
+
+            for (String pair : keyValuePairs) {
+                // Split each pair into key and value
+                int colonIndex = pair.indexOf(':');
+                if (colonIndex != -1) {
+                    String key = pair.substring(0, colonIndex)
+                            .trim()
+                            .replaceAll("^\"|\"$", "")  // Remove surrounding quotes
+                            .replaceAll("^'|'$", "");   // Remove surrounding single quotes
+
+                    String value = pair.substring(colonIndex + 1)
+                            .trim()
+                            .replaceAll("^\"|\"$", "")  // Remove surrounding quotes
+                            .replaceAll("^'|'$", "");   // Remove surrounding single quotes
+
+                    objectMap.put(key, value);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error parsing individual object: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return objectMap;
+    }
+
+    private static List<String> splitKeyValuePairs(String input) {
+        List<String> pairs = new ArrayList<>();
+        int bracketCount = 0;
+        int squareBracketCount = 0;
+        StringBuilder currentPair = new StringBuilder();
+
+        for (char c : input.toCharArray()) {
+            if (c == '{') {
+                bracketCount++;
+                currentPair.append(c);
+            } else if (c == '}') {
+                bracketCount--;
+                currentPair.append(c);
+            } else if (c == '[') {
+                squareBracketCount++;
+                currentPair.append(c);
+            } else if (c == ']') {
+                squareBracketCount--;
+                currentPair.append(c);
+            } else if (c == ',' && bracketCount == 0 && squareBracketCount == 0) {
+                pairs.add(currentPair.toString().trim());
+                currentPair = new StringBuilder();
+            } else {
+                currentPair.append(c);
+            }
+        }
+
+        if (currentPair.length() > 0) {
+            pairs.add(currentPair.toString().trim());
+        }
+
+        return pairs;
     }
 }

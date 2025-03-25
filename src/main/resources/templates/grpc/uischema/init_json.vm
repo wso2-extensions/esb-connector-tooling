@@ -24,7 +24,7 @@
                     {
                         "type": "attributeGroup",
                         "value": {
-                            "groupName": "Basic",
+                            "groupName": "Connection Details",
                             "elements": [
                                 {
                                     "type": "attribute",
@@ -42,11 +42,141 @@
                                     "value": {
                                         "name": "port",
                                         "displayName": "Port",
-                                        "inputType": "string",
-                                        "match Pattern": "^\\d+$",
+                                        "inputType": "stringOrExpression",
+                                        "match Pattern": "^\\\\d+$",
                                         "defaultValue": "",
                                         "required": "true",
                                         "helpTip": "The port for the root URL."
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "type": "attributeGroup",
+                        "value": {
+                            "groupName": "Authentication Details",
+                            "elements": [
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "authType",
+                                        "displayName": "Authentication Type",
+                                        "inputType": "combo",
+                                        "defaultValue": "No Auth",
+                                        "required": "true",
+                                        "helpTip": "The authentication type for the connection.",
+                                        "comboValues": [
+                                            "No Auth",
+                                            "API Key",
+                                            "Basic Auth",
+                                            "Bearer Token"
+                                        ]
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "username",
+                                        "displayName": "Username",
+                                        "inputType": "stringOrExpression",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "The username for the connection.",
+                                        "enableCondition": [{"authType":"Basic Auth"}]
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "password",
+                                        "displayName": "Password",
+                                        "inputType": "stringOrExpression",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "The password for the root URL.",
+                                        "enableCondition": [{"authType":"Basic Auth"}]
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "bearerToken",
+                                        "displayName": "Bearer Token",
+                                        "inputType": "stringOrExpression",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "The bearer token for the root URL.",
+                                        "enableCondition": [{"authType":"Bearer Token"}]
+                                    }
+                                },
+                               {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "tlsEnabled",
+                                        "displayName": "Enable TLS",
+                                        "inputType": "checkbox",
+                                        "defaultValue": "false",
+                                        "required": "false",
+                                        "helpTip": "The port for the root URL."
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "serverCrtPath",
+                                        "displayName": "Certificate crt file path",
+                                        "inputType": "string",
+                                        "defaultValue": "",
+                                        "required": "true",
+                                        "helpTip": "The port for the root URL.",
+                                        "enableCondition": [{"tlsEnabled":"true"}]
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "isHeadersAvailable",
+                                        "displayName": "Headers Available",
+                                        "inputType": "checkbox",
+                                        "defaultValue": "",
+                                        "required": "false",
+                                        "helpTip": "Tick the checkbox to add headers to the connection."
+                                    }
+                                },
+                                {
+                                    "type": "table",
+                                    "value": {
+                                        "name": "headers",
+                                        "displayName": "Headers",
+                                        "tableKey": "propertyName",
+                                        "tableValue": "propertyValue",
+                                        "helpTip": "Add headers to the connection in JSON format.",
+                                        "enableCondition": [{"isHeadersAvailable":"true"}],
+                                        "elements": [
+                                            {
+                                                "type": "attribute",
+                                                "value": {
+                                                    "name": "propertyName",
+                                                    "displayName": "Header Name",
+                                                    "inputType": "string",
+                                                    "defaultValue": "",
+                                                    "required": "true",
+                                                    "helpTip": "The name of the header."
+                                                }
+                                            },
+                                            {
+                                                "type": "attribute",
+                                                "value": {
+                                                    "name": "propertyValue",
+                                                    "displayName": "Header Value",
+                                                    "inputType": "stringOrExpression",
+                                                    "defaultValue": "",
+                                                    "required": "true",
+                                                    "helpTip": "The value of the header."
+                                                }
+                                            }
+                                        ]
                                     }
                                 }
                             ]

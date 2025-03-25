@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- ~  Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ ~  Copyright (c) 2025, WSO2 LLC. (http://www.wso2.com)
  ~
  ~  WSO2 LLC. licenses this file to you under the Apache License,
  ~  Version 2.0 (the "License"); you may not use this file except
@@ -20,12 +20,20 @@
 <template name="init" onError="fault" xmlns="http://ws.apache.org/ns/synapse">
     <parameter name="server" description="The server URL" />
     <parameter name="port" description="URL port"/>
+    <parameter name="bearerToken" description="Bearer Token type"/>
+    <parameter name="username" description="Username" />
+    <parameter name="password" description="Password"/>
+    <parameter name="headers" description="Headers" />
 
     <parameter name="blocking" description="Whether to use blocking transport"/>
     <sequence>
     <class name="org.wso2.carbon.${connectorName}connector.GRPCChannelBuilder">
         <property name="server" expression="$func:server" />
         <property name="port" expression="$func:port"/>
+        <property name="bearerToken" expression="$func:bearerToken"/>
+        <property name="username" expression="$func:username"/>
+        <property name="password" expression="$func:password"/>
+        <property name="headers" expression="$func:headers"/>
     </class>
     </sequence>
 </template>

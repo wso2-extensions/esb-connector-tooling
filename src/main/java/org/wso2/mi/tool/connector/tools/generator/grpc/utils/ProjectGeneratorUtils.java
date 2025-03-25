@@ -379,6 +379,20 @@ public class ProjectGeneratorUtils {
         String converter = pathToMainDir + "/TypeConverter.java";
         String converterTemplate = "templates/grpc/java/type_converter.vm";
         mergeVelocityTemplate(converter, converterTemplate, engine, context);
+
+        String headers = pathToMainDir + "/MetadataInterceptor.java";
+        String headerTemplate = "templates/grpc/java/metadata_interceptor.vm";
+        mergeVelocityTemplate(headers, headerTemplate, engine, context);
+
+        String basicCredential = pathToMainDir + "/BasicCallCredentials.java";
+        String basicCredentialTemplate = "templates/grpc/java/authentication/basic_call_credentials.vm";
+        mergeVelocityTemplate(basicCredential, basicCredentialTemplate, engine, context);
+
+
+        String bearerCredential = pathToMainDir + "/TokenCallCredentials.java";
+        String bearerCredentialTemplate = "templates/grpc/java/authentication/token_call_credentials.vm";
+        mergeVelocityTemplate(bearerCredential, bearerCredentialTemplate, engine, context);
+
     }
 
     private static void generateDocs(String pathToConnectorDir, VelocityEngine engine, VelocityContext context)

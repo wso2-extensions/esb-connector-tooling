@@ -18,19 +18,32 @@
 
 package org.wso2.carbon.${connectorName}connector;
 
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.Metadata;
 import org.apache.synapse.MessageContext;
+import org.apache.synapse.util.InlineExpressionUtil;
+import org.json.JSONArray;
 import org.wso2.carbon.connector.core.AbstractConnector;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
- * This uses for creating the channel for grpc.
+ * This class is responsible for creating a gRPC channel with metadata.
  */
 public class GRPCChannelBuilder extends AbstractConnector {
+    private static final Logger LOGGER = Logger.getLogger(GRPCChannelBuilder.class.getName());
 
     private static String server;
     private static String port;
+    private static String headers;
+    private static String username;
+    private static String password;
+    private static String serverCrt;
+    private static String bearerToken;
     private static final String GRPC_CHANNEL = "grpc_channel";
 
     public static String getServer() {
@@ -49,13 +62,128 @@ public class GRPCChannelBuilder extends AbstractConnector {
         GRPCChannelBuilder.port = port;
     }
 
+
+    public static void setHeaders(String headersJson) {
+        GRPCChannelBuilder.headers = headersJson;
+    }
+
+    public static String getGRPCHeaders() {
+        return headers;
+    }
+
+    public static String getUsername() {
+        return username;
+    }
+
+    public static void setUsername(String username) {
+        GRPCChannelBuilder.username = username;
+    }
+
+    public static String getPassword() {
+        return password;
+    }
+
+    public static void setPassword(String password) {
+        GRPCChannelBuilder.password = password;
+    }
+
+    public static String getServerCrt() {
+        return serverCrt;
+    }
+
+    public static void setServerCrt(String serverCrt) {
+        GRPCChannelBuilder.serverCrt = serverCrt;
+    }
+
+    public static String getBearerToken() {
+        return bearerToken;
+    }
+
+    public static void setBearerToken(String bearerToken) {
+        GRPCChannelBuilder.bearerToken = bearerToken;
+    }
+
     @Override
     public void connect(MessageContext messageContext) {
-        int portInt = Integer.parseInt(getPort());
-        ManagedChannel channel = ManagedChannelBuilder
-            .forAddress(getServer(), portInt)
-            .usePlaintext() // For local testing or non-secure connections
-            .build();
-        messageContext.setProperty(GRPC_CHANNEL, channel);
+        if (messageContext.getProperty(GRPC_CHANNEL) != null) {
+            return;
+        }
+        try {
+            if (getServer() == null || getPort() == null) {
+                throw new IllegalArgumentException("Server or port cannot be null");
+            }
+            if (getUsername() != null && getPassword() != null) {
+                BasicCallCredentials basicAuthCredential = new BasicCallCredentials(getUsername(), getPassword());
+                messageContext.setProperty("basicCredential", basicAuthCredential);
+            } else if (getBearerToken() != null) {
+                TokenCallCredentials tokenCredential = new TokenCallCredentials(getBearerToken());
+                messageContext.setProperty("tokenCredential", tokenCredential);
+            }
+
+            int portInt = Integer.parseInt(getPort());
+            String target = getServer() + ":" + portInt;
+
+            // Extract metadata from JSON
+            Metadata metadata = new Metadata();
+            JSONArray headerSet = null;
+
+            try {
+                //headerSet = mapper.readTree(getGRPCHeaders());
+                headers = InlineExpressionUtil.processInLineSynapseExpressionTemplate(messageContext, headers);
+                headerSet = new JSONArray(headers);
+            } catch (Exception e) {
+                LOGGER.log(Level.SEVERE, "Error parsing JSON headers: " + e.getMessage(), e);
+            }
+            if (headerSet != null) {
+                for (int i = 0; i < headerSet.length(); i++) {
+                    JSONArray row = headerSet.getJSONArray(i);
+
+                    if (row.length() >= 2) {
+                        String key = row.getString(0);
+                        String value = row.getString(1);
+
+                        metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
+                    }
+                }
+            }
+
+            // Create channel with metadata
+            ManagedChannel channel = createSecureChannel(target, metadata);
+
+            messageContext.setProperty(GRPC_CHANNEL, channel);
+            LOGGER.info("gRPC channel created successfully with metadata: " + target);
+
+        } catch (NumberFormatException e) {
+            LOGGER.log(Level.SEVERE, "Invalid port number: " + getPort(), e);
+            throw new RuntimeException("Invalid port number: " + getPort(), e);
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to create gRPC channel: " + e.getMessage(), e);
+            throw new RuntimeException("Failed to create gRPC channel", e);
+        }
+    }
+
+    /**
+     * Create a secure gRPC channel with metadata.
+     */
+    private ManagedChannel createSecureChannel(String target, Metadata metadata) {
+        try {
+            return ManagedChannelBuilder.forTarget(target)
+                    .useTransportSecurity()
+                    .intercept(new MetadataInterceptor(metadata))
+                    .build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to create secure channel, falling back to plaintext: " + e.getMessage(), e);
+            return createPlaintextChannel(target, metadata);
+        }
+    }
+
+    /**
+     * Create a plaintext gRPC channel with metadata.
+     */
+    private ManagedChannel createPlaintextChannel(String target, Metadata metadata) {
+        return ManagedChannelBuilder.forTarget(target)
+                .usePlaintext()
+                .intercept(new MetadataInterceptor(metadata))
+                .build();
     }
 }

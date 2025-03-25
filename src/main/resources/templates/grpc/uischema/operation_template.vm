@@ -1,6 +1,9 @@
+#set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toLowerCase())
+#set($remainder = $rpcCall.getRpcCallName().substring(1))
+#set($lowercaseKey = "${firstChar}${remainder}")
 {
     "connectorName": "$connectorName",
-    "operationName": "$rpcCall.getRpcCallName()",
+    "operationName": "$lowercaseKey",
     "title": "$rpcCall.getRpcCallName()",
     "help": "$rpcCall.getRpcCallName()",
     "markdownDescription": "# Summary\n \n# Prerequisites\n\n# Input\n\n# Output\n\n# Error\n\n# Example\n\n# Notes\n\n",

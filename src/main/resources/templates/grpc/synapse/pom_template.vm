@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- ~  Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ ~  Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com).
  ~
  ~  WSO2 LLC. licenses this file to you under the Apache License,
  ~  Version 2.0 (the "License"); you may not use this file except
@@ -48,75 +48,75 @@
             <carbon.mediation.version>4.7.175</carbon.mediation.version>
         </properties>
 
-        <dependencies>
-            <dependency>
-                <groupId>org.apache.synapse</groupId>
-                <artifactId>synapse-core</artifactId>
-                <version>${synapse.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.synapse</groupId>
-                <artifactId>synapse-commons</artifactId>
-                <version>${synapse.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.wso2.carbon.mediation</groupId>
-                <artifactId>org.wso2.carbon.connector.core</artifactId>
-                <version>${carbon.mediation.version}</version>
-            </dependency>
-                            <!-- Use Protobuf 3.21.5 to match gRPC 1.70.0 -->
-                            <dependency>
-                                <groupId>com.google.protobuf</groupId>
-                                <artifactId>protobuf-java</artifactId>
-                                <version>3.21.12</version>
-                            </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.synapse</groupId>
+            <artifactId>synapse-core</artifactId>
+            <version>${synapse.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.synapse</groupId>
+            <artifactId>synapse-commons</artifactId>
+            <version>${synapse.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.mediation</groupId>
+            <artifactId>org.wso2.carbon.connector.core</artifactId>
+            <version>${carbon.mediation.version}</version>
+        </dependency>
+        <!-- Use Protobuf 3.21.5 to match gRPC 1.70.0 -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.21.12</version>
+        </dependency>
 
-                            <!-- gRPC dependencies (1.70.0) -->
-                            <dependency>
-                                <groupId>io.grpc</groupId>
-                                <artifactId>grpc-netty</artifactId>
-                                <version>1.70.0</version>
-                            </dependency>
+        <!-- gRPC dependencies (1.70.0) -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
+            <version>1.70.0</version>
+        </dependency>
 
-                            <!-- Exclude protobuf-java from transitive pull-ins, so we only have 3.21.12 -->
-                            <dependency>
-                                <groupId>io.grpc</groupId>
-                                <artifactId>grpc-protobuf</artifactId>
-                                <version>1.70.0</version>
-                                <exclusions>
-                                    <exclusion>
-                                        <groupId>com.google.protobuf</groupId>
-                                        <artifactId>protobuf-java</artifactId>
-                                    </exclusion>
-                                </exclusions>
-                            </dependency>
+        <!-- Exclude protobuf-java from transitive pull-ins, so we only have 3.21.12 -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-protobuf</artifactId>
+            <version>1.70.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-                            <dependency>
-                                <groupId>io.grpc</groupId>
-                                <artifactId>grpc-stub</artifactId>
-                                <version>1.70.0</version>
-                            </dependency>
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+            <version>1.70.0</version>
+        </dependency>
 
-                        <!-- Java EE API if your environment requires it -->
-                        <dependency>
-                            <groupId>javax</groupId>
-                            <artifactId>javaee-api</artifactId>
-                            <version>8.0.1</version>
-                        </dependency>
+        <!-- Java EE API if your environment requires it -->
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>8.0.1</version>
+        </dependency>
 
-                      <dependency>
-                        <groupId>com.thesamet.scalapb.grpcweb</groupId>
-                        <artifactId>scalapb-grpcweb_sjs1_2.12</artifactId>
-                        <version>0.4.1</version>
-                      </dependency>
+        <dependency>
+            <groupId>com.thesamet.scalapb.grpcweb</groupId>
+            <artifactId>scalapb-grpcweb_sjs1_2.12</artifactId>
+            <version>0.4.1</version>
+        </dependency>
 
-                      <dependency>
-                        <groupId>com.google.perfmark</groupId>
-                        <artifactId>perfmark</artifactId>
-                        <version>0.23.0</version>
-                      </dependency>
+        <dependency>
+            <groupId>com.google.perfmark</groupId>
+            <artifactId>perfmark</artifactId>
+            <version>0.23.0</version>
+        </dependency>
 
-        </dependencies>
+    </dependencies>
     <build>
         <plugins>
             <plugin>
