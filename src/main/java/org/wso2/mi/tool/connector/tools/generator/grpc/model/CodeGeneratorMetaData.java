@@ -32,7 +32,6 @@ public class CodeGeneratorMetaData {
         this.miVersion = builder.miVersion;
     }
 
-    // Getters (optional, depending on your needs)
     public String getProtoFilePath() {
         return protoFilePath;
     }

@@ -123,6 +123,20 @@ public class GRPCChannelBuilder extends AbstractConnector {
             int portInt = Integer.parseInt(getPort());
             String target = getServer() + ":" + portInt;
 
+            if (getGRPCHeaders() == null) {
+                // Create channel without metadata
+                if(getServerCrt() != null) {
+                    // Create secure channel with server certificate
+                    ManagedChannel channel = createSecureChannelWithoutMetaData(target);
+                    messageContext.setProperty(GRPC_CHANNEL, channel);
+                    LOGGER.info("gRPC channel created successfully without metadata: " + target);
+                    return;
+                }
+                ManagedChannel channel = createPlaintextChannelWithoutMetadata(target);
+                messageContext.setProperty(GRPC_CHANNEL, channel);
+                LOGGER.info("gRPC channel created successfully without metadata: " + target);
+                return;
+            }
             // Extract metadata from JSON
             Metadata metadata = new Metadata();
             JSONArray headerSet = null;
@@ -147,6 +161,13 @@ public class GRPCChannelBuilder extends AbstractConnector {
                 }
             }
 
+            if (getServerCrt() != null) {
+                // Create secure channel with metadata and server certificate
+                ManagedChannel channel = createSecureChannel(target, metadata);
+                messageContext.setProperty(GRPC_CHANNEL, channel);
+                LOGGER.info("gRPC channel created successfully with metadata: " + target);
+                return;
+            }
             // Create channel with metadata
             ManagedChannel channel = createSecureChannel(target, metadata);
 
@@ -184,6 +205,29 @@ public class GRPCChannelBuilder extends AbstractConnector {
         return ManagedChannelBuilder.forTarget(target)
                 .usePlaintext()
                 .intercept(new MetadataInterceptor(metadata))
+                .build();
+    }
+
+    /**
+     * Create a secure gRPC channel without metadata.
+     */
+    private ManagedChannel createSecureChannelWithoutMetaData(String target) {
+        try {
+            return ManagedChannelBuilder.forTarget(target)
+                    .useTransportSecurity()
+                    .build();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Failed to create secure channel, falling back to plaintext: " + e.getMessage(), e);
+            return createPlaintextChannelWithoutMetadata(target);
+        }
+    }
+
+    /**
+     * Create a plaintext gRPC channel without metadata.
+     */
+    private ManagedChannel createPlaintextChannelWithoutMetadata(String target) {
+        return ManagedChannelBuilder.forTarget(target)
+                .usePlaintext()
                 .build();
     }
 }

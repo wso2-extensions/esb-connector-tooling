@@ -154,7 +154,11 @@ convert##
     #elseif($fieldDescriptor.type == "TYPE_BYTES")
     byte[][]##
     #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
+    #if($isJavaMultipleFiles)
     #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+    #else
+    #set($result = ${packageName}+"."+${javaGrpcStubFile}+${fieldDescriptor.typeName.replace($package + ".", "").trim()})
+    #end
     $result##
     #else
     Object[]##
@@ -173,7 +177,11 @@ convert##
     #elseif($fieldDescriptor.type == "TYPE_BYTES")
     byte[]##
     #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
+    #if($isJavaMultipleFiles)
     #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+    #else
+    #set($result = ${packageName}+"."+${javaGrpcStubFile}+${fieldDescriptor.typeName.replace($package + ".", "").trim()})
+    #end
     $result##
     #else
     Object##

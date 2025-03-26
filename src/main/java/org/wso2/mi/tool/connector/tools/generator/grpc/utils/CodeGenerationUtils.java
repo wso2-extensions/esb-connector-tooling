@@ -52,7 +52,7 @@ public class CodeGenerationUtils {
 
     public static String getTypeName(String input, String packageName) {
         // Use Pattern.quote to escape special characters in the package name
-        return input.replaceAll("^\\." + Pattern.quote(packageName) + "\\.", "");
+        return input.replaceAll("^\\." + Pattern.quote(packageName) + "\\.", "").replace(".", "");
     }
 
     public static void deleteDirectory(Path tempDir) throws IOException {

@@ -183,24 +183,7 @@ public class TypeConverter {
                                 Object kValue = object.get(key);
                                 Class<?> expectedType = setterMethod.getParameterTypes()[0];
 
-                                if (value != null && !expectedType.isAssignableFrom(kValue.getClass())) {
-                                    if (expectedType == Integer.class || expectedType == int.class) {
-                                        kValue = Integer.parseInt(kValue.toString());
-                                    } else if (expectedType == Long.class || expectedType == long.class) {
-                                        kValue = Long.parseLong(kValue.toString());
-                                    } else if (expectedType == Double.class || expectedType == double.class) {
-                                        kValue = Double.parseDouble(kValue.toString());
-                                    } else if (expectedType == Boolean.class || expectedType == boolean.class) {
-                                        kValue = Boolean.parseBoolean(kValue.toString());
-                                    } else if (expectedType == String.class) {
-                                        kValue = kValue.toString();
-                                    }else if (expectedType == ByteString.class) {
-                                        kValue = ByteString.copyFromUtf8((String) kValue);
-                                    } else {
-                                        throw new IllegalArgumentException("Unsupported type conversion for: " + expectedType);
-                                    }
-                                }
-
+                                kValue = getValueObject(value, kValue, expectedType);
                                 builder = setterMethod.invoke(builder, kValue);
                             }
                         }
@@ -219,6 +202,34 @@ public class TypeConverter {
             e.printStackTrace();
             return convertedObjects;
         }
+    }
+
+    private static Object getValueObject(String value, Object kValue, Class<?> expectedType) {
+        if (value != null && !expectedType.isAssignableFrom(kValue.getClass())) {
+            if (expectedType == Integer.class || expectedType == int.class) {
+                kValue = Integer.parseInt(kValue.toString());
+            } else if (expectedType == Long.class || expectedType == long.class) {
+                kValue = Long.parseLong(kValue.toString());
+            } else if (expectedType == Double.class || expectedType == double.class) {
+                kValue = Double.parseDouble(kValue.toString());
+            } else if (expectedType == Float.class || expectedType == float.class) {
+                kValue = Float.parseFloat(kValue.toString());
+            } else if (expectedType == Boolean.class || expectedType == boolean.class) {
+                kValue = Boolean.parseBoolean(kValue.toString());
+            } else if (expectedType == String.class) {
+                kValue = kValue.toString();
+            }else if (expectedType == ByteString.class) {
+                kValue = ByteString.copyFromUtf8((String) kValue);
+            } else if (expectedType == Arrays.class) {
+                kValue = convertToArray((String) kValue, expectedType.getComponentType());
+            } else if (expectedType == Object.class || !expectedType.isPrimitive()) {
+                kValue = convertToObject((String) kValue, expectedType);
+            } else {
+                throw new IllegalArgumentException("Unsupported type conversion for: " + expectedType);
+            }
+            //todo: add support for other types nested message types, arrays, etc.
+        }
+        return kValue;
     }
 
     private static Method findSetterMethod(Class<?> builderClass, String fieldName) {
@@ -241,6 +252,7 @@ public class TypeConverter {
     private static Object convertToObject(String value, Class<?> targetType) {
         try {
             Class<?> builderClass = null;
+            Map<String, String> fieldMaps = parseJsonObject(value);
             for (Class<?> nestedClass : targetType.getDeclaredClasses()) {
                 if (nestedClass.getSimpleName().equals("Builder")) {
                     builderClass = nestedClass;
@@ -266,24 +278,19 @@ public class TypeConverter {
 
                 if (builderCreationMethod != null) {
                     Object builder = builderCreationMethod.invoke(null);
-
-                    Method valueMethod = null;
-                    for (Method method : builderClass.getMethods()) {
-                        if (method.getParameterTypes().length == 1 &&
-                                method.getParameterTypes()[0] == String.class &&
-                                method.getReturnType() == builderClass) {
-                            valueMethod = method;
-                            break;
+                    for (String key : fieldMaps.keySet()) {
+                        Method setterMethod = findSetterMethod(builderClass, key);
+                        if (setterMethod != null) {
+                            Object kValue = fieldMaps.get(key);
+                            Class<?> expectedType = setterMethod.getParameterTypes()[0];
+                            kValue = getValueObject(value, kValue, expectedType);
+                            builder = setterMethod.invoke(builder, kValue);
                         }
                     }
 
-                    if (valueMethod != null) {
-                        builder = valueMethod.invoke(builder, value);
-
-                        Method buildMethod = builderClass.getMethod("build");
-                        return buildMethod.invoke(builder);
+                    Method buildMethod = builderClass.getMethod("build");
+                    return buildMethod.invoke(builder);
                     }
-                }
             }
 
             Constructor<?> constructor = targetType.getDeclaredConstructor(String.class);
@@ -368,8 +375,12 @@ public class TypeConverter {
         Map<String, String> objectMap = new HashMap<>();
 
         try {
-            // Remove outer braces
-            objectString = objectString.trim().replaceFirst("^\\{", "").replaceFirst("\\}$", "");
+            // Remove leading and trailing whitespace and brackets
+            if (objectString.startsWith("'{") && objectString.endsWith("}'")) {
+                objectString = objectString.trim().replaceFirst("'\\{", "").replaceFirst("\\}'", "");
+            } else {
+                objectString = objectString.trim().replaceFirst("^\\{", "").replaceFirst("\\}$", "");
+            }
 
             // Split by comma, handling nested structures
             List<String> keyValuePairs = splitKeyValuePairs(objectString);

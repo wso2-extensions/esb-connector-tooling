@@ -52,31 +52,6 @@ public class ConnectorGenerator {
     private static final VelocityEngine velocityEngine = new VelocityEngine();
 
     /**
-     * Main method to generate the connector.
-     *
-     * @param args The arguments.
-     */
-    public static void main(String[] args) {
-        if (args.length < 3 || args.length > 4) {
-            throw new IllegalArgumentException("Usage: <protobuffile> <outputpath> [miVersion]");
-        }
-        String protoFile = args[0];
-        String connectorPath = args[1];
-        String miVersion = args.length == 3 ? args[2] : "4.4.0";
-
-        try {
-        if (!protoFile.endsWith(".proto")) {
-            throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_100.getDescription());
-        }
-            generateConnector(protoFile, connectorPath, miVersion);
-        } catch (IOException | InterruptedException e) {
-            LOG.error(GRPC_CONNECTOR_101);
-        } catch (ConnectorGenException e) {
-            LOG.error(e.getMessage());
-        }
-    }
-
-    /**
      * Generates the connector using the OpenAPI spec.
      *
      * @param protoFile The OpenAPI spec.
@@ -106,6 +81,9 @@ public class ConnectorGenerator {
                 tempOutputDir
         );
         LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
+        if (!success) {
+            return;
+        }
         FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
         VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
         CodeGeneratorMetaData metaData = new CodeGeneratorMetaData.Builder()
