@@ -24,7 +24,7 @@
                     {
                         "type": "attributeGroup",
                         "value": {
-                            "groupName": "Connection Details",
+                            "groupName": "Basic",
                             "elements": [
                                 {
                                     "type": "attribute",
@@ -48,6 +48,52 @@
                                         "required": "true",
                                         "helpTip": "The port for the root URL."
                                     }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "isHeadersAvailable",
+                                        "displayName": "Headers Available",
+                                        "inputType": "checkbox",
+                                        "defaultValue": "",
+                                        "required": "false",
+                                        "helpTip": "Tick the checkbox to add headers to the connection."
+                                    }
+                                },
+                                {
+                                    "type": "table",
+                                    "value": {
+                                        "name": "headers",
+                                        "displayName": "Headers",
+                                        "tableKey": "propertyName",
+                                        "tableValue": "propertyValue",
+                                        "helpTip": "Add headers to the connection in JSON format.",
+                                        "enableCondition": [{"isHeadersAvailable":"true"}],
+                                        "elements": [
+                                            {
+                                                "type": "attribute",
+                                                "value": {
+                                                    "name": "propertyName",
+                                                    "displayName": "Header Name",
+                                                    "inputType": "string",
+                                                    "defaultValue": "",
+                                                    "required": "true",
+                                                    "helpTip": "The name of the header."
+                                                }
+                                            },
+                                            {
+                                                "type": "attribute",
+                                                "value": {
+                                                    "name": "propertyValue",
+                                                    "displayName": "Header Value",
+                                                    "inputType": "stringOrExpression",
+                                                    "defaultValue": "",
+                                                    "required": "true",
+                                                    "helpTip": "The value of the header."
+                                                }
+                                            }
+                                        ]
+                                    }
                                 }
                             ]
                         }
@@ -57,6 +103,29 @@
                         "value": {
                             "groupName": "Authentication Details",
                             "elements": [
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "tlsEnabled",
+                                        "displayName": "Enable TLS",
+                                        "inputType": "checkbox",
+                                        "defaultValue": "false",
+                                        "required": "false",
+                                        "helpTip": "The port for the root URL."
+                                    }
+                                },
+                                {
+                                    "type": "attribute",
+                                    "value": {
+                                        "name": "serverCrtPath",
+                                        "displayName": "Certificate crt file path",
+                                        "inputType": "string",
+                                        "defaultValue": "",
+                                        "required": "false",
+                                        "helpTip": "The port for the root URL.",
+                                        "enableCondition": [{"tlsEnabled":"true"}]
+                                    }
+                                },
                                 {
                                     "type": "attribute",
                                     "value": {
@@ -109,76 +178,8 @@
                                         "helpTip": "The bearer token for the root URL.",
                                         "enableCondition": [{"authType":"Bearer Token"}]
                                     }
-                                },
-                               {
-                                    "type": "attribute",
-                                    "value": {
-                                        "name": "tlsEnabled",
-                                        "displayName": "Enable TLS",
-                                        "inputType": "checkbox",
-                                        "defaultValue": "false",
-                                        "required": "false",
-                                        "helpTip": "The port for the root URL."
-                                    }
-                                },
-                                {
-                                    "type": "attribute",
-                                    "value": {
-                                        "name": "serverCrtPath",
-                                        "displayName": "Certificate crt file path",
-                                        "inputType": "string",
-                                        "defaultValue": "",
-                                        "required": "false",
-                                        "helpTip": "The port for the root URL.",
-                                        "enableCondition": [{"tlsEnabled":"true"}]
-                                    }
-                                },
-                                {
-                                    "type": "attribute",
-                                    "value": {
-                                        "name": "isHeadersAvailable",
-                                        "displayName": "Headers Available",
-                                        "inputType": "checkbox",
-                                        "defaultValue": "",
-                                        "required": "false",
-                                        "helpTip": "Tick the checkbox to add headers to the connection."
-                                    }
-                                },
-                                {
-                                    "type": "table",
-                                    "value": {
-                                        "name": "headers",
-                                        "displayName": "Headers",
-                                        "tableKey": "propertyName",
-                                        "tableValue": "propertyValue",
-                                        "helpTip": "Add headers to the connection in JSON format.",
-                                        "enableCondition": [{"isHeadersAvailable":"true"}],
-                                        "elements": [
-                                            {
-                                                "type": "attribute",
-                                                "value": {
-                                                    "name": "propertyName",
-                                                    "displayName": "Header Name",
-                                                    "inputType": "string",
-                                                    "defaultValue": "",
-                                                    "required": "true",
-                                                    "helpTip": "The name of the header."
-                                                }
-                                            },
-                                            {
-                                                "type": "attribute",
-                                                "value": {
-                                                    "name": "propertyValue",
-                                                    "displayName": "Header Value",
-                                                    "inputType": "stringOrExpression",
-                                                    "defaultValue": "",
-                                                    "required": "true",
-                                                    "helpTip": "The value of the header."
-                                                }
-                                            }
-                                        ]
-                                    }
                                 }
+
                             ]
                         }
                     }

@@ -4,10 +4,9 @@ $single_hash Configuring $connectorName Connector
 
 $double_hash Initializing the connector
 
-To use the $connectorName connector, add the <${connectorName}.init> element in your configuration before carrying out any connector operations.
-This <${connectorName}.init> element authenticates the user using OAuth 2.0 Client Credentials Grant Type authentication to access the registered client application.
-For more information on authorizing requests in $connectorName, see [API documentation](https://www.oauth.com/oauth2-servers/access-tokens/client-credentials/).
-
+To use the $connectorName connector, add the <${connectorName}.init> element to your configuration before carrying out
+any connector operations. The <${connectorName}.init> element supports authentication via headers, and you can enable
+TLS support by selecting the corresponding checkbox in the init form.
 #if ($auth)
 **init**
 
