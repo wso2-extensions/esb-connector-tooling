@@ -46,6 +46,7 @@ public class RPCService {
         private final String outputName;
         private final Map<String, DescriptorProtos.FieldDescriptorProto> input;
         private final Map<String, DescriptorProtos.FieldDescriptorProto> output;
+        private final String comment;
 
         private RPCCall(RPCCallBuilder builder) {
             this.rpcCallName = builder.rpcCallName;
@@ -53,6 +54,7 @@ public class RPCService {
             this.outputName = builder.outputName;
             this.input = builder.input;
             this.output = builder.output;
+            this.comment = builder.comment;
         }
 
         public String getRpcCallName() {
@@ -75,12 +77,18 @@ public class RPCService {
             return output;
         }
 
+        public String getComment() {
+            return comment;
+        }
+
         public static class RPCCallBuilder {
             private String rpcCallName;
             private String inputName;
             private String outputName;
             private Map<String, DescriptorProtos.FieldDescriptorProto> input = new HashMap<>();
             private Map<String, DescriptorProtos.FieldDescriptorProto> output = new HashMap<>();
+
+            private String comment = "";
 
             public RPCCallBuilder rpcCallName(String rpcCallName) {
                 this.rpcCallName = rpcCallName;
@@ -125,6 +133,11 @@ public class RPCService {
 
             public RPCCallBuilder addOutputParam(Map<String, DescriptorProtos.FieldDescriptorProto> value) {
                 this.output.putAll(value);
+                return this;
+            }
+
+            public RPCCallBuilder comment(String comment) {
+                this.comment = comment;
                 return this;
             }
 

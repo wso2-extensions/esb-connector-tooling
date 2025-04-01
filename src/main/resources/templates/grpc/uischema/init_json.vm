@@ -128,7 +128,7 @@
                                         "displayName": "Certificate crt file path",
                                         "inputType": "string",
                                         "defaultValue": "",
-                                        "required": "true",
+                                        "required": "false",
                                         "helpTip": "The port for the root URL.",
                                         "enableCondition": [{"tlsEnabled":"true"}]
                                     }

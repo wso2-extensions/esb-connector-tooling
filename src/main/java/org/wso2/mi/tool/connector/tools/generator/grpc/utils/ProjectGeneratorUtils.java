@@ -373,9 +373,10 @@ public class ProjectGeneratorUtils {
     private static void generateJavaMainFiles(String pathToMainDir, VelocityEngine engine, VelocityContext context)
             throws IOException {
 
-        String outputFile = pathToMainDir + "/GRPCChannelBuilder.java";
-        String template = "templates/grpc/java/grpc_channel_builder.vm";
-        mergeVelocityTemplate(outputFile, template, engine, context);
+        String connectionPool = pathToMainDir + "/GRPCConnectionPool.java";
+        String cpTemplate = "templates/grpc/java/grpc_connection_pool.vm";
+        mergeVelocityTemplate(connectionPool, cpTemplate, engine, context);
+
         String converter = pathToMainDir + "/TypeConverter.java";
         String converterTemplate = "templates/grpc/java/type_converter.vm";
         mergeVelocityTemplate(converter, converterTemplate, engine, context);
@@ -419,9 +420,15 @@ public class ProjectGeneratorUtils {
         String synapseFileName = pathToResourcesDir + "/functions/" + operationName + ".xml";
         String uischemaFileName = pathToResourcesDir + "/uischema/" + operationName + ".json";
         generateJavaMediators(context);
+
+        String outputFile = pathToMain + "/GRPCChannelBuilder.java";
+        String template = "templates/grpc/java/grpc_channel_builder.vm";
+        mergeVelocityTemplate(outputFile, template, engine, context);
+
         String javaMediator = pathToMain + "/" + capitalizeFirstLetter(rpcCall.getRpcCallName()) + "Mediator.java";
         mergeVelocityTemplate(javaMediator, "templates/grpc/java/rpc_java_mediator.vm", engine, context);
         mergeVelocityTemplate(synapseFileName, "templates/grpc/synapse/rpc_function.vm", engine, context);
+
         mergeVelocityTemplate(uischemaFileName, "templates/grpc/uischema/operation_template.vm", engine, context);
         if ((Boolean) context.get(HAS_RESPONSE_MODEL)) {
             String outputSchemaFileName = pathToResourcesDir + "/outputschema/" + operationName + ".json";

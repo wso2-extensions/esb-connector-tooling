@@ -15,11 +15,16 @@
 *  specific language governing permissions and limitations
 *  under the License.
 */
-
+#set($packageName = "" )
+#if($javaPackage )
+    #set($packageName = $javaPackage )
+#else
+    #set($packageName = $package )
+    #set($packageN = $package)
+#end
 package org.wso2.carbon.${connectorName}connector;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.grpc.ConnectivityState;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -27,7 +32,9 @@ import org.apache.synapse.MessageContext;
 import org.apache.synapse.util.InlineExpressionUtil;
 import org.json.JSONArray;
 import org.wso2.carbon.connector.core.AbstractConnector;
+import org.wso2.carbon.connector.core.ConnectException;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +52,8 @@ public class GRPCChannelBuilder extends AbstractConnector {
     private static String serverCrt;
     private static String bearerToken;
     private static final String GRPC_CHANNEL = "grpc_channel";
+    private static String name;
+    private static boolean tlsEnabled;
 
     public static String getServer() {
         return server;
@@ -103,131 +112,148 @@ public class GRPCChannelBuilder extends AbstractConnector {
         GRPCChannelBuilder.bearerToken = bearerToken;
     }
 
+    public static void setName(String name) {
+        GRPCChannelBuilder.name = name;
+    }
+
+    public static String getName() {
+        return name;
+    }
+
+
+    public static void setTlsEnabled(String tlsEnabled) {
+           boolean myBoolean = Boolean.parseBoolean(tlsEnabled);
+           GRPCChannelBuilder.tlsEnabled = myBoolean;
+    }
+    public static boolean isTLS() {
+        return tlsEnabled;
+    }
+
     @Override
     public void connect(MessageContext messageContext) {
-        if (messageContext.getProperty(GRPC_CHANNEL) != null) {
-            return;
+        GRPCConnectionPool instance = GRPCConnectionPool.getInstance();
+        if(instance.getConnection(getName()) != null) {
+            GRPCConnectionPool.GRPCConnection connection = instance.getConnection(getName());
+            ConnectivityState state = connection.getChannel().getState(true);
+            if (state != ConnectivityState.SHUTDOWN && state != ConnectivityState.TRANSIENT_FAILURE) {
+                Object stubObject = connection.getStub();
+                ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub =
+                        (${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub) stubObject;
+                messageContext.setProperty("stub", stub);
+                return;
+            } else {
+                instance.removeConnection(getName());
+            }
         }
         try {
             if (getServer() == null || getPort() == null) {
-                throw new IllegalArgumentException("Server or port cannot be null");
-            }
-            if (getUsername() != null && getPassword() != null) {
-                BasicCallCredentials basicAuthCredential = new BasicCallCredentials(getUsername(), getPassword());
-                messageContext.setProperty("basicCredential", basicAuthCredential);
-            } else if (getBearerToken() != null) {
-                TokenCallCredentials tokenCredential = new TokenCallCredentials(getBearerToken());
-                messageContext.setProperty("tokenCredential", tokenCredential);
+                handleException("Server or port cannot be null", messageContext);
             }
 
             int portInt = Integer.parseInt(getPort());
             String target = getServer() + ":" + portInt;
+            Metadata metadata = getGRPCHeaders() != null ? getHeaderMetadata(messageContext): null;
 
-            if (getGRPCHeaders() == null) {
-                // Create channel without metadata
-                if(getServerCrt() != null) {
-                    // Create secure channel with server certificate
-                    ManagedChannel channel = createSecureChannelWithoutMetaData(target);
-                    messageContext.setProperty(GRPC_CHANNEL, channel);
-                    LOGGER.info("gRPC channel created successfully without metadata: " + target);
-                    return;
-                }
-                ManagedChannel channel = createPlaintextChannelWithoutMetadata(target);
-                messageContext.setProperty(GRPC_CHANNEL, channel);
-                LOGGER.info("gRPC channel created successfully without metadata: " + target);
-                return;
+            ManagedChannel channel = createChannel(target, isTLS(), metadata);
+            messageContext.setProperty(GRPC_CHANNEL, channel);
+
+            ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub;
+            if ( getUsername() != null && getPassword() != null) {
+                BasicCallCredentials basicAuthCredential = new BasicCallCredentials(getUsername(), getPassword());
+                stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub(channel).withCallCredentials(basicAuthCredential);
+            } else if (getBearerToken() != null) {
+                TokenCallCredentials tokenCredential = new TokenCallCredentials(getBearerToken());
+                stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub(channel).withCallCredentials(tokenCredential);
+            } else {
+                stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub(channel);
             }
-            // Extract metadata from JSON
-            Metadata metadata = new Metadata();
-            JSONArray headerSet = null;
-
-            try {
-                //headerSet = mapper.readTree(getGRPCHeaders());
-                headers = InlineExpressionUtil.processInLineSynapseExpressionTemplate(messageContext, headers);
-                headerSet = new JSONArray(headers);
-            } catch (Exception e) {
-                LOGGER.log(Level.SEVERE, "Error parsing JSON headers: " + e.getMessage(), e);
-            }
-            if (headerSet != null) {
-                for (int i = 0; i < headerSet.length(); i++) {
-                    JSONArray row = headerSet.getJSONArray(i);
-
-                    if (row.length() >= 2) {
-                        String key = row.getString(0);
-                        String value = row.getString(1);
-
-                        metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
-                    }
-                }
-            }
-
-            if (getServerCrt() != null) {
-                // Create secure channel with metadata and server certificate
-                ManagedChannel channel = createSecureChannel(target, metadata);
-                messageContext.setProperty(GRPC_CHANNEL, channel);
-                LOGGER.info("gRPC channel created successfully with metadata: " + target);
-                return;
-            }
-            // Create channel with metadata
-            ManagedChannel channel = createSecureChannel(target, metadata);
+            messageContext.setProperty("stub", stub);
+            GRPCConnectionPool.GRPCConnection connection = new GRPCConnectionPool.GRPCConnection.Builder()
+                    .connectionName(getName())
+                            .stub(stub)
+                                    .channel(channel).build();
+            instance.addConnection(getName(), connection);
 
             messageContext.setProperty(GRPC_CHANNEL, channel);
-            LOGGER.info("gRPC channel created successfully with metadata: " + target);
-
         } catch (NumberFormatException e) {
-            LOGGER.log(Level.SEVERE, "Invalid port number: " + getPort(), e);
-            throw new RuntimeException("Invalid port number: " + getPort(), e);
+            handleException("Invalid port number: " + getPort(), messageContext);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to create gRPC channel: " + e.getMessage(), e);
-            throw new RuntimeException("Failed to create gRPC channel", e);
+            handleException("Failed to create gRPC channel", messageContext);
         }
     }
 
-    /**
-     * Create a secure gRPC channel with metadata.
-     */
-    private ManagedChannel createSecureChannel(String target, Metadata metadata) {
+    private static Metadata getHeaderMetadata(MessageContext messageContext) throws ConnectException {
+        // Extract metadata from JSON
+        Metadata metadata = new Metadata();
+        JSONArray headerSet;
+
         try {
-            return ManagedChannelBuilder.forTarget(target)
-                    .useTransportSecurity()
-                    .intercept(new MetadataInterceptor(metadata))
-                    .build();
+            headers = InlineExpressionUtil.processInLineSynapseExpressionTemplate(messageContext, headers);
+            headerSet = new JSONArray(headers);
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to create secure channel, falling back to plaintext: " + e.getMessage(), e);
-            return createPlaintextChannel(target, metadata);
+            throw new ConnectException("Error parsing JSON headers: " + e.getMessage());
         }
+        for (int i = 0; i < headerSet.length(); i++) {
+            JSONArray row = headerSet.getJSONArray(i);
+
+            if (row.length() >= 2) {
+                String key = row.getString(0);
+                String value = row.getString(1);
+
+                metadata.put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
+            }
+        }
+        return metadata;
     }
 
     /**
-     * Create a plaintext gRPC channel with metadata.
+     * Creates a gRPC channel based on the provided parameters.
+     *
+     * @param target The target server address in the format "host:port"
+     * @param useSecure Whether to use transport security (TLS)
+     * @param metadata Optional metadata for the channel (can be null)
+     * @return A configured ManagedChannel
      */
-    private ManagedChannel createPlaintextChannel(String target, Metadata metadata) {
-        return ManagedChannelBuilder.forTarget(target)
-                .usePlaintext()
-                .intercept(new MetadataInterceptor(metadata))
-                .build();
-    }
-
-    /**
-     * Create a secure gRPC channel without metadata.
-     */
-    private ManagedChannel createSecureChannelWithoutMetaData(String target) {
+    private ManagedChannel createChannel(String target, boolean useSecure, Metadata metadata) throws ConnectException {
         try {
-            return ManagedChannelBuilder.forTarget(target)
-                    .useTransportSecurity()
-                    .build();
+            if (useSecure && metadata != null) {
+                LOGGER.info("gRPC secure channel is created with metadata:"+ target);
+                return  ManagedChannelBuilder.forTarget(target)
+                        .useTransportSecurity()
+                        .intercept(new MetadataInterceptor(metadata))
+                        .keepAliveTime(30, TimeUnit.SECONDS)
+                        .keepAliveTimeout(10, TimeUnit.SECONDS)
+                        .keepAliveWithoutCalls(true)
+                        .build();
+            } else if (useSecure){
+                LOGGER.info("gRPC secure channel is created:"+ target);
+                return ManagedChannelBuilder.forTarget(target)
+                        .useTransportSecurity()
+                        .keepAliveTime(30, TimeUnit.SECONDS)
+                        .keepAliveTimeout(10, TimeUnit.SECONDS)
+                        .keepAliveWithoutCalls(true)
+                        .build();
+            } else if (metadata != null) {
+                LOGGER.info("gRPC channel is created with metadata:"+ target);
+                return ManagedChannelBuilder.forTarget(target)
+                        .usePlaintext()
+                        .intercept(new MetadataInterceptor(metadata))
+                        .keepAliveTime(30, TimeUnit.SECONDS)
+                        .keepAliveTimeout(10, TimeUnit.SECONDS)
+                        .keepAliveWithoutCalls(true)
+                        .build();
+            } else {
+                LOGGER.info("gRPC channel is created:"+ target);
+                return ManagedChannelBuilder.forTarget(target)
+                        .usePlaintext()
+                        .keepAliveTime(30, TimeUnit.SECONDS)
+                        .keepAliveTimeout(10, TimeUnit.SECONDS)
+                        .keepAliveWithoutCalls(true)
+                        .build();
+            }
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Failed to create secure channel, falling back to plaintext: " + e.getMessage(), e);
-            return createPlaintextChannelWithoutMetadata(target);
+            throw new ConnectException("Failed to create channel: " + e.getMessage());
         }
     }
 
-    /**
-     * Create a plaintext gRPC channel without metadata.
-     */
-    private ManagedChannel createPlaintextChannelWithoutMetadata(String target) {
-        return ManagedChannelBuilder.forTarget(target)
-                .usePlaintext()
-                .build();
-    }
 }

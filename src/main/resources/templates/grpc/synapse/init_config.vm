@@ -18,16 +18,19 @@
 -->
 
 <template name="init" onError="fault" xmlns="http://ws.apache.org/ns/synapse">
+    <parameter name="name" description="Connection name" />
     <parameter name="server" description="The server URL" />
     <parameter name="port" description="URL port"/>
     <parameter name="bearerToken" description="Bearer Token type"/>
     <parameter name="username" description="Username" />
     <parameter name="password" description="Password"/>
     <parameter name="headers" description="Headers" />
-
+    <parameter name="tlsEnabled" description="TLS channel" />
     <parameter name="blocking" description="Whether to use blocking transport"/>
     <sequence>
     <class name="org.wso2.carbon.${connectorName}connector.GRPCChannelBuilder">
+        <property name="name" expression="$func:name" />
+        <property name="tlsEnabled" expression="$func:tlsEnabled" />
         <property name="server" expression="$func:server" />
         <property name="port" expression="$func:port"/>
         <property name="bearerToken" expression="$func:bearerToken"/>

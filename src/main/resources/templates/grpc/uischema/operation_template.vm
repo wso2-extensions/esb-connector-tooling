@@ -43,77 +43,8 @@
                                             "displayName": "$param.getName()",
                                             "inputType": "stringOrExpression",
                                             "defaultValue": "$param.getDefaultValue()",
-                                            "required": "",
+                                            "required": "true",
                                             "helpTip": "$param.getName()"
-                                        }
-                                    }#if($foreach.hasNext),#end
-                                #end
-                            ]
-                        }
-                    }
-                    #end
-                    #if ($operation.getHeaderParameters().size() > 0)
-                    ,{
-                        "type":"attributeGroup",
-                        "value":{
-                            "groupName": "Headers",
-                            "elements":[
-                                #foreach ($param in $operation.getHeaderParameters())
-                                    {
-                                        "type":"attribute",
-                                        "value":{
-                                            "name": "$param.getParameterName()",
-                                            "displayName": "$param.getDisplayName()",
-                                            "inputType": "stringOrExpression",
-                                            "defaultValue": "$param.getDefaultValue()",
-                                            "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
-                                        }
-                                    }#if($foreach.hasNext),#end
-                                #end
-                            ]
-                        }
-                    }
-                    #end
-                    #if ($operation.getCookieParameters().size() > 0)
-                    ,{
-                        "type":"attributeGroup",
-                        "value":{
-                            "groupName": "Cookies",
-                            "elements":[
-                                #foreach ($param in $operation.getCookieParameters())
-                                    {
-                                        "type":"attribute",
-                                        "value":{
-                                            "name": "$param.getParameterName()",
-                                            "displayName": "$param.getDisplayName()",
-                                            "inputType": "stringOrExpression",
-                                            "defaultValue": "$param.getDefaultValue()",
-                                            "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
-                                        }
-                                    }#if($foreach.hasNext),#end
-                                #end
-                            ]
-                        }
-                    }
-                    #end
-                    #if ($operation.getRequestParameters().size() > 0)
-                    ,{
-                        "type":"attributeGroup",
-                        "value":{
-                            "groupName": "Request Body",
-                            "elements":[
-                                #foreach ($param in $operation.getRequestParameters())
-                                    {
-                                        "type":"attribute",
-                                        "value":{
-                                            "name": "$param.getParameterName()",
-                                            "displayName": "$param.getDisplayName()",
-                                            "inputType": "stringOrExpression",
-                                            "defaultValue": "$param.getDefaultValue()",
-                                            "required": "$param.isRequired()",
-                                            "helpTip": "$param.getJsonDescription()"
                                         }
                                     }#if($foreach.hasNext),#end
                                 #end

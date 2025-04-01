@@ -250,17 +250,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
              #end
                  .build();
 
-           ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub;
-           if (context.getProperty("basicCredential") != null) {
-                stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub((ManagedChannel) context
-                    .getProperty("grpc_channel")).withCallCredentials((BasicCallCredentials) context.getProperty("basicCredential"));
-           } else if (context.getProperty("tokenCredential") != null) {
-                stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub((ManagedChannel) context
-                    .getProperty("grpc_channel")).withCallCredentials((TokenCallCredentials) context.getProperty("tokenCredential"));
-           } else {
-                stub = ${packageName}.${javaGrpcServerFile}.newBlockingStub((ManagedChannel) context
-                   .getProperty("grpc_channel"));
-           }
+           ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub = (${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub) context.getProperty("stub");
 
            #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
            #if($isJavaMultipleFiles)

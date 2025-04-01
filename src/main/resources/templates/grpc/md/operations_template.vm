@@ -1,72 +1,60 @@
-#set ( $single_hash = '#' )
-#set ( $double_hash = '##' )
-#set ( $triple_hash = '###' )
-$single_hash Working with $connectorName Connector
+#set( $single_hash = '#' )
+#set( $double_hash = '##' )
+#set( $triple_hash = '###' )
+
+$single_hash Working with ${connectorName} Connector
 
 $double_hash Overview
 
-| Operation        | Description |
-| ------------- |-------------|
-#foreach($operation in $service.getRpcCallsMap().keySet())
-| [${operation}](${single_hash}$operation.getDocumentationLink())| ${operation.getDescription()} |
+The **${connectorName}** connector allows you to perform a set of predefined operations. Each operation corresponds to a remote procedure call (RPC) that interacts with the backend service.
+
+Below is a list of available operations and their descriptions:
+
+| Operation Name   |
+|------------------|
+#foreach( $operation in $service.getRpcCallsMap().values() )
+| ${operation.getRpcCallName()} |
 #end
+
+---
 
 $double_hash Operation Details
 
-This section provides details on each of the operations.
+This section provides detailed information about each operation, including the expected input and output parameters.
 
-#foreach($operation in $operations)
-$triple_hash $operation.getDisplayName()
+#foreach( $operation in $service.getRpcCallsMap().values() )
 
-${operation.getDescription()}
+$triple_hash ${operation.getRpcCallName()} RPC Operation
 
-**$operation.getName()**
+${operation.getComment()}
 
-#set($parameterList = $operation.getInput())
-#set($response = $parameterList.addAll($operation.getQueryParameters()))
-#set($response = $parameterList.addAll($operation.getHeaderParameters()))
-#set($response = $parameterList.addAll($operation.getRequestParameters()))
-```xml
-<${connectorName}.$operation.getName()>
-#foreach($parameter in $parameterList)
-    <$parameter.getParameterName()>{$ctx:$parameter.getParameterName()}</$parameter.getParameterName()>
+**Input Parameters**
+
+#if( !$operation.getInput().isEmpty() )
+The following table lists the input parameters required for this operation:
+
+| Parameter Name   | Proto Type   |
+|------------------|--------------|
+#foreach( $entry in $operation.getInput().entrySet() )
+| ${entry.getKey()} | ${entry.getValue().getType()} |
 #end
-</${connectorName}.$operation.getName()>
-```
-
-**Properties**
-
-#foreach($parameter in $parameterList)
-* $parameter.getParameterName(): $parameter.getDescription()
-#if ($parameter.getInnerSchema())
-This is parameter is of a complex type. Use the below schema to build the parameter and set it as a property to this
-parameter.
-```json
-$parameter.getInnerSchema()
-```
+#else
+This operation does not require any input parameters.
 #end
+
+**Output Parameters**
+
+#if( !$operation.getOutput().isEmpty() )
+The following table lists the output parameters returned by this operation:
+
+| Parameter Name   | Proto Type   |
+|------------------|--------------|
+#foreach( $entry in $operation.getOutput().entrySet() )
+| ${entry.getKey()} | ${entry.getValue().getType()} |
 #end
-#if ($operation.getRequestSchema())
-
-**Request Schema**
-
-This operation contains a composed schema as the request schema. The request payload for this operation has to be built
-using the following schema.
-
-```json
-$operation.getRequestSchema()
-```
+#else
+This operation does not return any output parameters.
 #end
-#if ($operation.isUnhandledContentType())
 
-**Request Schema**
-
-This operation contains unhandled media type/s in the request body. Please construct the payload accordingl to the
-desired media type and set the following headers accordingly.
-
-```xml
-<property name="messageType" value="{MEDIA_TYPE}" scope="axis2"/>
-<property name="ContentType" value="{MEDIA_TYPE}" scope="axis2"/>
-```
-#end
+---
 #end
