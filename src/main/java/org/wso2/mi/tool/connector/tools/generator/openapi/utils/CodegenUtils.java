@@ -28,8 +28,6 @@ import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.openapi.model.Operation;
 import org.wso2.mi.tool.connector.tools.generator.openapi.model.Parameter;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -47,9 +45,9 @@ public class CodegenUtils {
 
     /**
      * Throw a ConnectorGenException with given message and exception
-     * @param message
-     * @param throwable
-     * @throws ConnectorGenException
+     * @param message                   message
+     * @param throwable                 exception
+     * @throws ConnectorGenException    ConnectorGenException
      */
     public static void handleException(String message, Throwable throwable) throws ConnectorGenException {
 
@@ -59,8 +57,8 @@ public class CodegenUtils {
 
     /**
      * Throw a ConnectorGenException with given message
-     * @param message
-     * @throws ConnectorGenException
+     * @param message                   message
+     * @throws ConnectorGenException    ConnectorGenException
      */
     public static void handleException(String message) throws ConnectorGenException {
 
@@ -80,7 +78,7 @@ public class CodegenUtils {
 
     /**
      * Tokenize given string and make first character of each token capital
-     * @param name
+     * @param name     string to be tokenized  
      * @return tokenized string
      */
     public static String toStartCase(String name) {
@@ -100,7 +98,7 @@ public class CodegenUtils {
 
     /**
      * Convert the given string to lower camel case
-     * @param name
+     * @param name string to be converted
      * @return
      */
     public static String toLowerCamelCase(String name) {
@@ -113,8 +111,8 @@ public class CodegenUtils {
 
     /**
      * Replace all '/' characters with '_' character.
-     * @param path
-     * @return
+     * @param path  path to be normalized
+     * @return      normalized path
      */
     public static String normPath(String path) {
         return path.replaceAll("/", "_");
@@ -122,11 +120,11 @@ public class CodegenUtils {
 
     /**
      *  Create a Parameter object with given params
-     * @param name
-     * @param required
-     * @param description
-     * @param defaultValue
-     * @return
+     * @param name          parameter name     
+     * @param required      is required      
+     * @param description   description
+     * @param defaultValue  default value
+     * @return              Parameter object
      */
     public static Parameter createParameter(String name, boolean required, String description, String defaultValue) {
 
@@ -140,13 +138,13 @@ public class CodegenUtils {
 
     /**
      * Create an Operation object with given params
-     * @param name
-     * @param path
-     * @param description
-     * @param pathParameterList
-     * @param queryParameterList
-     * @param headerParameterList
-     * @param cookieParameterList
+     * @param name                  operation name
+     * @param path                  operation path
+     * @param description           operation description
+     * @param pathParameterList     path parameters
+     * @param queryParameterList    query parameters
+     * @param headerParameterList   header parameters
+     * @param cookieParameterList   cookie parameters
      * @return
      */
     public static Operation createOperation(String name, String path, String description, List<Parameter> pathParameterList,
@@ -169,12 +167,10 @@ public class CodegenUtils {
 
     /**
      * Read properties given via a JSON object and populate velocity context
-     * @param properties properties object
-     * connectorName: name of the connector
-     * @return
-     * @throws ConnectorGenException
-     * @throws IOException
-     * @throws URISyntaxException
+     * @param properties                properties object
+     * @param parentPath                parent path
+     * @return                          velocity context
+     * @throws ConnectorGenException    ConnectorGenException
      */
     public static VelocityContext createVelocityContext(Properties properties, String parentPath)
             throws ConnectorGenException {
@@ -271,8 +267,8 @@ public class CodegenUtils {
 
     /**
      * Remove an attribute from the velocity context
-     * @param key
-     * @param context
+     * @param key       key to be removed
+     * @param context   velocity context
      */
     public static void removeFromContext(String key, VelocityContext context) {
         if (context.containsKey(key)) {
