@@ -18,6 +18,9 @@
 
 package org.wso2.mi.tool.connector.tools.generator.grpc.model;
 
+/**
+ * This class is used to store metadata that related to the code generation.
+ */
 public class CodeGeneratorMetaData {
 
     private final String protoFilePath;

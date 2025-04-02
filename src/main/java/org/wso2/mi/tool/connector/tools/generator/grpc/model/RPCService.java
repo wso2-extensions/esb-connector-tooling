@@ -23,6 +23,9 @@ import com.google.protobuf.DescriptorProtos;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This class is used to store service related details which need to fill the templates.
+ */
 public class RPCService {
     private final String serviceName;
     private final Map<String, RPCCall> rpcCallsMap;

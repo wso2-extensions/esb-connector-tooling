@@ -157,7 +157,7 @@ convert##
     #if($isJavaMultipleFiles)
     #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
     #else
-    #set($result = ${packageName}+"."+${javaGrpcStubFile}+${fieldDescriptor.typeName.replace($package + ".", "").trim()})
+    #set($result = ${packageName}+"."+${javaGrpcStubFile}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
     #end
     $result##
     #else

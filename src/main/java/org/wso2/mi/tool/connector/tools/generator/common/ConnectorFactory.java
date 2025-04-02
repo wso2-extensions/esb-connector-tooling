@@ -27,7 +27,9 @@ import java.io.IOException;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ConnectorGenerator.generateConnector;
 import static org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenerator.generateConnector;
 
-
+/**
+ * This class is the main starting API for connector generate.
+ */
 public class ConnectorFactory {
     private static final Log LOG = LogFactory.getLog(ConnectorFactory.class);
     public static void main(String[] args) {

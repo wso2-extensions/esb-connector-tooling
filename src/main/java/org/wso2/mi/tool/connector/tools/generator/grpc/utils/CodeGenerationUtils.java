@@ -27,6 +27,9 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+/**
+ * Utils for the code generations.
+ */
 public class CodeGenerationUtils {
 
     public static String capitalizeFirstLetter(String str) {

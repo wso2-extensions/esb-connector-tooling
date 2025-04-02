@@ -235,7 +235,8 @@ public class TypeConverter {
     private static Method findSetterMethod(Class<?> builderClass, String fieldName) {
         for (Method method : builderClass.getMethods()) {
             if (method.getName().equalsIgnoreCase("set" + normalize(fieldName)) ||
-                    method.getName().equalsIgnoreCase("with" + normalize(fieldName))) {
+                    method.getName().equalsIgnoreCase("with" + normalize(fieldName)) ||
+                    method.getName().equalsIgnoreCase("addAll" + normalize(fieldName))) {
                 if (method.getReturnType() == builderClass &&
                         method.getParameterTypes().length == 1) {
                     return method;
@@ -283,8 +284,12 @@ public class TypeConverter {
                         if (setterMethod != null) {
                             Object kValue = fieldMaps.get(key);
                             Class<?> expectedType = setterMethod.getParameterTypes()[0];
-                            kValue = getValueObject(value, kValue, expectedType);
-                            builder = setterMethod.invoke(builder, kValue);
+                            if (expectedType.getName().endsWith("$Builder")) {
+                               convertToObject(kValue.toString(), expectedType);
+                            } else  {
+                                kValue = getValueObject(value, kValue, expectedType);
+                                builder = setterMethod.invoke(builder, kValue);
+                            }
                         }
                     }
 

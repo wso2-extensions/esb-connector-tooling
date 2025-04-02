@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
-import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
@@ -40,7 +39,6 @@ import java.util.stream.Collectors;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_101;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.ProjectGeneratorUtils.generateConnectorProject;
 
 /**

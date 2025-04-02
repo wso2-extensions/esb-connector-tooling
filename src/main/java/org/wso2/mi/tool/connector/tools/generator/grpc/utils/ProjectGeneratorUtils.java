@@ -67,8 +67,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_COM
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_101;
 
 /**
- * The VelocityConfigGenerator handles the generation of the openapi connector
- * project files.
+ * This handles the generation of the gRPC connector project files.
  */
 public class ProjectGeneratorUtils {
 
@@ -149,7 +148,7 @@ public class ProjectGeneratorUtils {
             deleteDirectory(tempDir);
 
             copyGenResources(protoPath, pathToConnectorDir, engine, context);
-            //todo check the integraiton path
+            //todo check the integration path for vscode usage
             String integrationProjectPath = projectPath;
             if (integrationProjectPath != null) {
                 copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
@@ -356,7 +355,7 @@ public class ProjectGeneratorUtils {
         String genResourcesPath = pathToConnectorDir + "/gen_resources";
         String outputFile = genResourcesPath + "/README.md";
 
-        String template = "templates/md/gen_resources_template.vm";
+        String template = "templates/grpc/md/gen_resources_template.vm";
         mergeVelocityTemplate(outputFile, template, engine, context);
 
         FileUtils.copyFileToDirectory(new File(protoFilePath), new File(genResourcesPath));

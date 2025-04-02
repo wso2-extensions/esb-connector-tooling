@@ -38,7 +38,7 @@ public class MetadataInterceptor implements ClientInterceptor {
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
             @Override
             public void start(Listener responseListener, Metadata headers) {
-                headers.merge(metadata); // Merge predefined metadata
+                headers.merge(metadata);
                 super.start(responseListener, headers);
             }
         };
