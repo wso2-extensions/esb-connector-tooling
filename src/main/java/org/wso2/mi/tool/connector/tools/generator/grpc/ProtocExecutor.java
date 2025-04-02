@@ -40,7 +40,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.OS_NAME;
  */
 public class ProtocExecutor {
 
-    private static final String PROTOC_VERSION = "3.21.12";
+    private static final String PROTOC_VERSION = "21.12";
     private static final String GRPC_PLUGIN_VERSION = "1.70.0";
 
     private static String getProtocDownloadUrl(String os, String arch) {

@@ -21,10 +21,11 @@ package org.wso2.mi.tool.connector.tools.generator.common;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.wso2.mi.tool.connector.tools.generator.common.exception.ConnectorGenException;
+import org.wso2.mi.tool.connector.tools.generator.grpc.GRPCConnectorGenerator;
 
 import java.io.IOException;
 
-import static org.wso2.mi.tool.connector.tools.generator.grpc.ConnectorGenerator.generateConnector;
 import static org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenerator.generateConnector;
 
 /**
@@ -32,7 +33,7 @@ import static org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenera
  */
 public class ConnectorFactory {
     private static final Log LOG = LogFactory.getLog(ConnectorFactory.class);
-    public static void main(String[] args) {
+    public static void main(String[] args) throws ConnectorGenException {
         if (args.length < 3 || args.length > 4) {
             throw new IllegalArgumentException("Usage: <idl_file> <outputpath> [miVersion]");
         }
@@ -42,14 +43,14 @@ public class ConnectorFactory {
 
         try {
             if (idlFile.endsWith(".proto")) {
-                generateConnector(idlFile, connectorPath, miVersion);
+                GRPCConnectorGenerator.generateConnector(idlFile, connectorPath, miVersion);
             } else if (idlFile.endsWith(".yaml") || idlFile.endsWith(".yml")|| idlFile.endsWith(".json")) {
                 generateConnector(idlFile, connectorPath, miVersion, null);
             } else {
                 LOG.error("Please provide a valid Protocol Buffer (.proto) or OpenAPI file (.yaml/.json).");
             }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException(e);
+        } catch (org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException e) {
+            throw new ConnectorGenException(e.getMessage());
         }
     }
 }

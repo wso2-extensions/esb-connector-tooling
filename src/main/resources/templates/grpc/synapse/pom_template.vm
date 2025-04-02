@@ -110,12 +110,6 @@
             <version>0.4.1</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.google.perfmark</groupId>
-            <artifactId>perfmark</artifactId>
-            <version>0.23.0</version>
-        </dependency>
-
     </dependencies>
     <build>
         <plugins>

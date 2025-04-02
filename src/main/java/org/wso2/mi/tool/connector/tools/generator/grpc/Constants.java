@@ -33,6 +33,8 @@ public class Constants {
     public static final String SERVICE = "service";
     public static final String HAS_RESPONSE_MODEL = "hasResponseModel";
     public static final String TEMP_COMPILE_DIRECTORY = "_grpc_compile";
+    public static final String TEMP_JAVA_DIRECTORY = "_grpc_java";
+
     public static final String METHODS_WITH_ARRAY = "methodsWithArray";
 
 }

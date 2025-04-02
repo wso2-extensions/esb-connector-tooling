@@ -19,8 +19,8 @@ Below is an introduction to the folder structure for the MI Connector. It outlin
 │   │   │   ├── main
 │   │   │   │   ├──assembly
 │   │   │   │   ├── java
-│   │   │   │   │    ├── org.wso2.carbon.<connectorName>
-│   │   │   │   │    │                   ├── <proto file package name>
+│   │   │   │   │    ├── org.wso2.carbon.${connectorName}
+│   │   │   │   │    │                   ├── ${packageName}
 │   │   │   │   │    │                         (java client)
 │   │   │   │   │    ├── java files(class mediators)
 │   │   ├── resources

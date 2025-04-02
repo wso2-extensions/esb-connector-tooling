@@ -41,13 +41,15 @@ import java.util.Arrays;
 #end
 import java.util.HashMap;
 import java.util.Map;
+import io.grpc.StatusRuntimeException;
+import org.apache.axis2.AxisFault;
 import org.apache.synapse.MessageContext;
-
-import io.grpc.ManagedChannel;
 
 import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.wso2.carbon.connector.core.AbstractConnector;
+
+import static java.lang.String.format;
 
 ##
 ## ProtoTypeMapper.vm - Velocity Template for Protocol Buffer Type to Java Class mapping
@@ -268,8 +270,10 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
            JsonUtil.getNewJsonPayload(axisMsgCtx, jsonPayload, true, true);
            axisMsgCtx.setProperty(org.apache.axis2.Constants.Configuration.MESSAGE_TYPE, "application/json");
            axisMsgCtx.setProperty(org.apache.axis2.Constants.Configuration.CONTENT_TYPE, "application/json");
-        } catch (Exception e) {
-            log.error("Error in ${capitalizedKey}Mediator: ", e);
+        } catch (StatusRuntimeException e) {
+           handleException(format("Error in PublishMediator: code %s , cause: %s ", e.getStatus().getCode().name(), e.getStatus().getDescription()), context);
+        } catch (AxisFault e) {
+           handleException("Error in PublishMediator:", e, context);
         }
     }
 }

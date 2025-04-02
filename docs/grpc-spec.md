@@ -94,4 +94,4 @@ Below java code option can be supported,
 **Note:**
 - Not supported for multiple package imports
 - Not supported for the deadline option  
-- Stream type s are not supported
+- Stream types are not supported

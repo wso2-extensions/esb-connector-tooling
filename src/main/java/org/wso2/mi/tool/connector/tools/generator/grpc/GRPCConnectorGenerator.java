@@ -24,10 +24,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_JAVA_DIRECTORY;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
@@ -44,54 +47,56 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.ProjectGener
 /**
  * Generates the connector using the Protobuf spec.
  */
-public class ConnectorGenerator {
-    private static final Log LOG = LogFactory.getLog(ConnectorGenerator.class);
+public class GRPCConnectorGenerator {
+    private static final Log LOG = LogFactory.getLog(GRPCConnectorGenerator.class);
 
     private static final VelocityEngine velocityEngine = new VelocityEngine();
 
     /**
      * Generates the connector using the OpenAPI spec.
      *
-     * @param protoFile The OpenAPI spec.
+     * @param protoFile The proto spec.
      * @param connectorPath The output directory.
      * @param miVersion The MI version (default is 4.4.0 if not provided).
      * @return The path to the generated connector.
      */
-    public static void generateConnector(String protoFile, String connectorPath, String miVersion)
-            throws IOException, InterruptedException {
+    public static void generateConnector(String protoFile, String connectorPath, String miVersion) throws ConnectorGenException {
 
         // 1. Download + Extract protoc
-        Path protocPath = ProtocExecutor.downloadAndExtractProtoc();
-        // 2. Download + Mark executable the gRPC plugin
-        Path grpcPluginPath = ProtocExecutor.downloadGrpcPlugin();
-        Path protoFPath = Paths.get(protoFile);
-        String protoSourceDir = protoFPath.getParent().toString();
-        String protoFileName = protoFPath.getFileName().toString();
+        try {
+            Path protocPath = ProtocExecutor.downloadAndExtractProtoc();
+            // 2. Download + Mark executable the gRPC plugin
+            Path grpcPluginPath = ProtocExecutor.downloadGrpcPlugin();
+            Path protoFPath = Paths.get(protoFile);
+            String protoSourceDir = protoFPath.getParent().toString();
+            String protoFileName = protoFPath.getFileName().toString();
 
-        String tempOutputDir = protoSourceDir + "/generated";
+            String tempOutputDir = Files.createTempDirectory(TEMP_JAVA_DIRECTORY).toString();
 
-        // 3. Run protoc to generate Java & gRPC stubs
-        boolean success = ProtocExecutor.runProtoc(
-                protocPath.toFile(),
-                grpcPluginPath.toFile(),
-                protoSourceDir,
-                protoFileName,
-                tempOutputDir
-        );
-        LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
-        if (!success) {
-            return;
+            // 3. Run protoc to generate Java & gRPC stubs
+            boolean success = ProtocExecutor.runProtoc(
+                    protocPath.toFile(),
+                    grpcPluginPath.toFile(),
+                    protoSourceDir,
+                    protoFileName,
+                    tempOutputDir
+            );
+            LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
+            if (!success) {
+                return;
+            }
+            FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
+            VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
+            CodeGeneratorMetaData metaData = new CodeGeneratorMetaData.Builder()
+                    .withMIVersion(miVersion)
+                    .withProtoFilePath(protoFile)
+                    .withConnectorPath(connectorPath)
+                    .withProtoFileName(protoFileName)
+                    .build();
+            generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir);
+        } catch (IOException | InterruptedException e) {
+            throw new ConnectorGenException(e.getMessage());
         }
-        FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
-        VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
-        CodeGeneratorMetaData metaData = new CodeGeneratorMetaData.Builder()
-                .withMIVersion(miVersion)
-                .withProtoFilePath(protoFile)
-                .withConnectorPath(connectorPath)
-                .withProtoFileName(protoFileName)
-                .build();
-        generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir);
-
     }
 
     private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName) {
