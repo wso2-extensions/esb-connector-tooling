@@ -38,6 +38,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_VERSION;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.GROUP_ID;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_JAVA_DIRECTORY;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
@@ -182,11 +187,11 @@ public class GRPCConnectorGenerator {
 
     private static void updateConnectorMetaInfo(VelocityContext context, String serviceName, String resolvedConnectorName) {
         String artifactId = "org.wso2.mi.connector." + resolvedConnectorName;
-        context.put("artifactId", artifactId);
-        context.put("version", "1.0.0");
-        context.put("groupId", "org.wso2.mi.connector");
-        context.put("connectorName", resolvedConnectorName);
-        context.put("serviceName", serviceName);
+        context.put(ARTIFACTS, artifactId);
+        context.put(CONNECTOR_VERSION, "1.0.0");
+        context.put(GROUP_ID, "org.wso2.mi.connector");
+        context.put(CONNECTOR_NAME, resolvedConnectorName);
+        context.put(SERVICE_NAME, serviceName);
     }
 
     private static Map<String, DescriptorProtos.FieldDescriptorProto> fieldMap(Map<String, DescriptorProtos.DescriptorProto> messageTypeMap, String result) {

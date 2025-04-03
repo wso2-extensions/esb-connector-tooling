@@ -26,9 +26,12 @@ public class Constants {
 
     //context keywords
     public static final String ARTIFACTS = "artifactId";
+    public static final String CONNECTOR_VERSION = "version";
     public static final String CONNECTOR_NAME = "connectorName";
+    public static final String GROUP_ID = "groupId";
     public static final String OUTPUT_FIELD_METHODS = "outputFMethods";
     public static final String INPUT_FIELD_METHODS = "inputFMethods";
+    public static final String SERVICE_NAME = "serviceName";
 
     public static final String SERVICE = "service";
     public static final String HAS_RESPONSE_MODEL = "hasResponseModel";

@@ -273,7 +273,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
         } catch (StatusRuntimeException e) {
            handleException(format("Error in PublishMediator: code %s , cause: %s ", e.getStatus().getCode().name(), e.getStatus().getDescription()), context);
         } catch (AxisFault e) {
-           handleException("Error in PublishMediator:", e, context);
+           handleException("Error in ${capitalizedKey}Mediator:", e, context);
         }
     }
 }

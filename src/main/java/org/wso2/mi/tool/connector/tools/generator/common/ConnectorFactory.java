@@ -26,6 +26,10 @@ import org.wso2.mi.tool.connector.tools.generator.grpc.GRPCConnectorGenerator;
 
 import java.io.IOException;
 
+import static org.wso2.mi.tool.connector.tools.generator.common.Constants.JSON_EXTENSION;
+import static org.wso2.mi.tool.connector.tools.generator.common.Constants.PROTO_EXTENSION;
+import static org.wso2.mi.tool.connector.tools.generator.common.Constants.YAML_EXTENSION;
+import static org.wso2.mi.tool.connector.tools.generator.common.Constants.YML_EXTENSION;
 import static org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenerator.generateConnector;
 
 /**
@@ -42,9 +46,10 @@ public class ConnectorFactory {
         String miVersion = args.length == 3 ? args[2] : "4.4.0";
 
         try {
-            if (idlFile.endsWith(".proto")) {
+            if (idlFile.endsWith(PROTO_EXTENSION)) {
                 GRPCConnectorGenerator.generateConnector(idlFile, connectorPath, miVersion, null);
-            } else if (idlFile.endsWith(".yaml") || idlFile.endsWith(".yml")|| idlFile.endsWith(".json")) {
+            } else if (idlFile.endsWith(YAML_EXTENSION) || idlFile.endsWith(YML_EXTENSION)||
+                    idlFile.endsWith(JSON_EXTENSION)) {
                 generateConnector(idlFile, connectorPath, miVersion, null);
             } else {
                 LOG.error("Please provide a valid Protocol Buffer (.proto) or OpenAPI file (.yaml/.json).");
