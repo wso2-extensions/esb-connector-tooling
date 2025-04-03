@@ -18,6 +18,7 @@
 
 package org.wso2.carbon.${connectorName}connector;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.ByteString;
 
 import java.lang.reflect.Array;
@@ -158,38 +159,12 @@ public class TypeConverter {
             }
 
             if (builderClass != null) {
-                Method builderCreationMethod = null;
-                try {
-                    builderCreationMethod = targetType.getMethod("newBuilder");
-                } catch (NoSuchMethodException e) {
-                    for (Method method : targetType.getMethods()) {
-                        if ((method.getName().equals("builder") ||
-                                method.getName().startsWith("newBuilder")) &&
-                                Modifier.isStatic(method.getModifiers()) &&
-                                method.getReturnType() == builderClass) {
-                            builderCreationMethod = method;
-                            break;
-                        }
-                    }
-                }
-
+                Method builderCreationMethod = getBuilderCreationMethod(targetType, builderClass);
                 if (builderCreationMethod != null) {
                     for (Map<String, String> object : objects) {
-                        Object builder = builderCreationMethod.invoke(null);
-
-                        for (String key : object.keySet()) {
-                            Method setterMethod = findSetterMethod(builderClass, key);
-                            if (setterMethod != null) {
-                                Object kValue = object.get(key);
-                                Class<?> expectedType = setterMethod.getParameterTypes()[0];
-
-                                kValue = getValueObject(value, kValue, expectedType);
-                                builder = setterMethod.invoke(builder, kValue);
-                            }
-                        }
-
-                        Method buildMethod = builderClass.getMethod("build");
-                        Object builtObject = buildMethod.invoke(builder);
+                        ObjectMapper mapper = new ObjectMapper();
+                        String json = mapper.writeValueAsString(object);
+                        Object builtObject = convertToObject(json, targetType);
                         convertedObjects.add(builtObject);
                     }
                 }
@@ -233,15 +208,28 @@ public class TypeConverter {
     }
 
     private static Method findSetterMethod(Class<?> builderClass, String fieldName) {
+        List<Method> methods = new ArrayList<>();
         for (Method method : builderClass.getMethods()) {
             if (method.getName().equalsIgnoreCase("set" + normalize(fieldName)) ||
                     method.getName().equalsIgnoreCase("with" + normalize(fieldName)) ||
                     method.getName().equalsIgnoreCase("addAll" + normalize(fieldName))) {
                 if (method.getReturnType() == builderClass &&
                         method.getParameterTypes().length == 1) {
+                    methods.add(method);
+                    if (methods.size() == 2) {
+                        break;
+                    }
+                }
+            }
+        }
+        if (methods.size() == 2) {
+            for (Method method: methods) {
+                if (!method.getParameterTypes()[0].getName().endsWith("$Builder")) {
                     return method;
                 }
             }
+        } else if (methods.size() == 1) {
+            return methods.get(0);
         }
         return null;
     }
@@ -262,20 +250,7 @@ public class TypeConverter {
             }
 
             if (builderClass != null) {
-                Method builderCreationMethod = null;
-                try {
-                    builderCreationMethod = targetType.getMethod("newBuilder");
-                } catch (NoSuchMethodException e) {
-                    for (Method method : targetType.getMethods()) {
-                        if ((method.getName().equals("builder") ||
-                                method.getName().startsWith("newBuilder")) &&
-                                Modifier.isStatic(method.getModifiers()) &&
-                                method.getReturnType() == builderClass) {
-                            builderCreationMethod = method;
-                            break;
-                        }
-                    }
-                }
+                Method builderCreationMethod = getBuilderCreationMethod(targetType, builderClass);
 
                 if (builderCreationMethod != null) {
                     Object builder = builderCreationMethod.invoke(null);
@@ -284,8 +259,17 @@ public class TypeConverter {
                         if (setterMethod != null) {
                             Object kValue = fieldMaps.get(key);
                             Class<?> expectedType = setterMethod.getParameterTypes()[0];
-                            if (expectedType.getName().endsWith("$Builder")) {
-                               convertToObject(kValue.toString(), expectedType);
+                            if (expectedType.getName().endsWith("Iterable")) {
+                                String arrayString = kValue.toString();
+                                if (arrayString.startsWith("[")) {
+                                    arrayString = arrayString.substring(1);
+                                }
+                                if (arrayString.endsWith("]")) {
+                                    arrayString = arrayString.substring(0, arrayString.length() - 1);
+                                }
+                                String[] parts = arrayString.split("\\s*,\\s*");
+                                List<String> valueList = Arrays.asList(parts);
+                                builder = setterMethod.invoke(builder, valueList);
                             } else  {
                                 kValue = getValueObject(value, kValue, expectedType);
                                 builder = setterMethod.invoke(builder, kValue);
@@ -305,6 +289,22 @@ public class TypeConverter {
         } catch (Exception e) {
             System.err.println("Error converting '" + value + "' to " + targetType.getName() + ": " + e.getMessage());
             e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static Method getBuilderCreationMethod(Class<?> targetType, Class<?> builderClass) {
+        try {
+            return targetType.getMethod("newBuilder");
+        } catch (NoSuchMethodException e) {
+            for (Method method : targetType.getMethods()) {
+                if ((method.getName().equals("builder") ||
+                        method.getName().startsWith("newBuilder")) &&
+                        Modifier.isStatic(method.getModifiers()) &&
+                        method.getReturnType() == builderClass) {
+                    return method;
+                }
+            }
             return null;
         }
     }

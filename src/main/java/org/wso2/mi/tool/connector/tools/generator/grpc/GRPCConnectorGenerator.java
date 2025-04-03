@@ -60,7 +60,7 @@ public class GRPCConnectorGenerator {
      * @param miVersion The MI version (default is 4.4.0 if not provided).
      * @return The path to the generated connector.
      */
-    public static void generateConnector(String protoFile, String connectorPath, String miVersion) throws ConnectorGenException {
+    public static void generateConnector(String protoFile, String connectorPath, String miVersion, String integrationProjectPath) throws ConnectorGenException {
 
         // 1. Download + Extract protoc
         try {
@@ -93,7 +93,7 @@ public class GRPCConnectorGenerator {
                     .withConnectorPath(connectorPath)
                     .withProtoFileName(protoFileName)
                     .build();
-            generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir);
+            generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir, integrationProjectPath);
         } catch (IOException | InterruptedException e) {
             throw new ConnectorGenException(e.getMessage());
         }

@@ -43,7 +43,7 @@ public class ConnectorFactory {
 
         try {
             if (idlFile.endsWith(".proto")) {
-                GRPCConnectorGenerator.generateConnector(idlFile, connectorPath, miVersion);
+                GRPCConnectorGenerator.generateConnector(idlFile, connectorPath, miVersion, null);
             } else if (idlFile.endsWith(".yaml") || idlFile.endsWith(".yml")|| idlFile.endsWith(".json")) {
                 generateConnector(idlFile, connectorPath, miVersion, null);
             } else {

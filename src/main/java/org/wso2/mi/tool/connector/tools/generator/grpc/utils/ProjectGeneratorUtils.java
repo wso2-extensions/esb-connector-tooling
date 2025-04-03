@@ -76,7 +76,8 @@ public class ProjectGeneratorUtils {
     private static URLClassLoader classLoader;
 
     public static void generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
-                                                VelocityContext context, String tempJavaPath) {
+                                                VelocityContext context, String tempJavaPath,
+                                                String integrationProjectPath) {
         String projectPath = metadata.getConnectorPath();
         String protoPath = metadata.getProtoFilePath();
         String miVersion = metadata.getMiVersion();
@@ -148,8 +149,6 @@ public class ProjectGeneratorUtils {
             deleteDirectory(tempDir);
 
             copyGenResources(protoPath, pathToConnectorDir, engine, context);
-            //todo check the integration path for vscode usage
-            String integrationProjectPath = projectPath;
             if (integrationProjectPath != null) {
                 copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
             }
