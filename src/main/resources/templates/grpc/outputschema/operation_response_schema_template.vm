@@ -1,0 +1,70 @@
+#set($protoToJsonMap = {
+  "TYPE_DOUBLE": "number",
+  "TYPE_FLOAT": "number",
+  "TYPE_INT64": "string",
+  "TYPE_UINT64": "string",
+  "TYPE_FIXED64": "string",
+  "TYPE_SFIXED64": "string",
+  "TYPE_SINT64": "string",
+  "TYPE_INT32": "number",
+  "TYPE_UINT32": "number",
+  "TYPE_FIXED32": "number",
+  "TYPE_SFIXED32": "number",
+  "TYPE_SINT32": "number",
+  "TYPE_ENUM": "number",
+  "TYPE_BOOL": "boolean",
+  "TYPE_STRING": "string",
+  "TYPE_BYTES": "string",
+  "TYPE_MESSAGE": "object"
+})
+#macro(getJsonType $protoType)#if($protoToJsonMap.containsKey($protoType))$!protoToJsonMap.get($protoType).trim()#else$!{"unknown"}#end#end
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "title": "$connectorName $rpcCall.getRpcCallName() Operation Response Schema",
+    "description": "Schema representing the output of the $rpcCall.getRpcCallName() operation in $connectorName",
+    "properties": {
+       #if ($rpcCall.getOutput() != "")
+        "payload": {
+            "type": "object",
+            "description": "Payload of the API response.",
+            "additionalProperties": true,
+            "properties": {
+                #set($parameterList = $rpcCall.getOutput())
+                #foreach ($param in $parameterList)
+                "$param.getName()": {
+                    "type": "#getJsonType($param.getType().toString())"
+                }#if($foreach.hasNext),#end
+                #end
+            }
+        },
+      #else
+        "payload": {
+            "type": "object",
+            "description": "Payload of the API response.",
+            "additionalProperties": true
+        },
+      #end
+      "attributes": {
+        "type": "object",
+        "description": "Metadata about the operation.",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP status code of the API response.",
+            "minimum": 100,
+            "maximum": 599
+          }
+        },
+        "required": ["statusCode"],
+        "additionalProperties": false
+      },
+      "headers": {
+        "type": "object",
+        "description": "HTTP headers of the API response.",
+        "additionalProperties": false
+      }
+    },
+    "required": ["payload", "attributes", "headers"],
+    "additionalProperties": false
+  }

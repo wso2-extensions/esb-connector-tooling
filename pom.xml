@@ -80,6 +80,53 @@
             <artifactId>commons-lang3</artifactId>
             <version>3.17.0</version>
         </dependency>
+
+        <!-- Use Protobuf 3.21.5 to match gRPC 1.70.0 -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>3.21.12</version>
+        </dependency>
+
+        <!-- Protocol Buffers utilities (for JSON conversion and other utilities) -->
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>3.21.12</version>
+        </dependency>
+
+        <!-- gRPC dependencies (1.70.0) -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-netty</artifactId>
+            <version>1.70.0</version>
+        </dependency>
+
+        <!-- Exclude protobuf-java from transitive pull-ins, so we only have 3.21.12 -->
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-protobuf</artifactId>
+            <version>1.70.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>io.grpc</groupId>
+            <artifactId>grpc-stub</artifactId>
+            <version>1.70.0</version>
+        </dependency>
+
+        <!-- Java EE API if your environment requires it -->
+        <dependency>
+            <groupId>javax</groupId>
+            <artifactId>javaee-api</artifactId>
+            <version>8.0.1</version>
+        </dependency>
     </dependencies>
     <pluginRepositories>
         <pluginRepository>
@@ -162,6 +209,16 @@
         </snapshotRepository>
     </distributionManagement>
     <build>
+        <resources>
+            <resource>
+                <!-- Your main resources folder -->
+                <directory>src/main/resources</directory>
+                <!-- Include all files recursively -->
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -253,8 +310,8 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <addClasspath>true</addClasspath>
-                            <mainClass>org.wso2.mi.tool.connector.tools.generator.ConnectorProjectGenerator</mainClass>
+<!--                            <addClasspath>true</addClasspath>-->
+                            <mainClass>org.wso2.mi.tool.connector.tools.generator.common.ConnectorFactory</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -270,7 +327,7 @@
                     <repositoryName>lib</repositoryName>
                     <programs>
                         <program>
-                            <mainClass>org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenerator</mainClass>
+                            <mainClass>org.wso2.mi.tool.connector.tools.generator.common.ConnectorFactory</mainClass>
                             <id>generator</id>
                         </program>
                     </programs>
