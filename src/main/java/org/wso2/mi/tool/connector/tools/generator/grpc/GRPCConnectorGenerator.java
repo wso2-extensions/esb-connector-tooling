@@ -63,7 +63,8 @@ public class GRPCConnectorGenerator {
      * @param protoFile The proto spec.
      * @param connectorPath The output directory.
      * @param miVersion The MI version (default is 4.4.0 if not provided).
-     * @return The path to the generated connector.
+     * @param integrationProjectPath The integration project path.
+     * @throws ConnectorGenException If an error occurs during connector generation.
      */
     public static void generateConnector(String protoFile, String connectorPath, String miVersion, String integrationProjectPath) throws ConnectorGenException {
 
