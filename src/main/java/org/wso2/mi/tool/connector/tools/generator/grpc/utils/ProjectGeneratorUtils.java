@@ -301,13 +301,13 @@ public class ProjectGeneratorUtils {
         mergeVelocityTemplate(outputFile, template, engine, context);
 
         // Copy icon directory
-        try (InputStream iconStream = classLoader.getResourceAsStream("icon/icon-large.gif")) {
+        try (InputStream iconStream = classLoader.getResourceAsStream("icon/grpc-icon-large.gif")) {
             if (iconStream != null) {
                 Files.copy(iconStream, Paths.get(pathToResourcesDir, "icon", "icon-large.gif"),
                         StandardCopyOption.REPLACE_EXISTING);
             }
         }
-        try (InputStream iconStream = classLoader.getResourceAsStream("icon/icon-small.gif")) {
+        try (InputStream iconStream = classLoader.getResourceAsStream("icon/grpc-icon-small.gif")) {
             if (iconStream != null) {
                 Files.copy(iconStream, Paths.get(pathToResourcesDir, "icon", "icon-small.gif"),
                         StandardCopyOption.REPLACE_EXISTING);
