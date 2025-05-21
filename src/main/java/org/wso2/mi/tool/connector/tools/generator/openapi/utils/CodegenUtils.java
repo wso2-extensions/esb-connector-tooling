@@ -99,7 +99,7 @@ public class CodegenUtils {
     /**
      * Convert the given string to lower camel case
      * @param name string to be converted
-     * @return
+     * @return converted string
      */
     public static String toLowerCamelCase(String name) {
 
@@ -145,7 +145,8 @@ public class CodegenUtils {
      * @param queryParameterList    query parameters
      * @param headerParameterList   header parameters
      * @param cookieParameterList   cookie parameters
-     * @return
+     * @param responseSchema        response schema
+     * @return                      Operation object
      */
     public static Operation createOperation(String name, String path, String description, List<Parameter> pathParameterList,
                                             List<Parameter> queryParameterList, List<Parameter> headerParameterList,

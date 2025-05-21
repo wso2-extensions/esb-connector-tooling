@@ -90,6 +90,8 @@ public class ProtocExecutor {
     /**
      * Download and extract protoc for the current OS/arch, returning the absolute path
      * to the "protoc" (or "protoc.exe") binary in a temp folder.
+     * @return the absolute path to the protoc binary
+     * @throws IOException if an error occurs during download or extraction
      */
     public static Path downloadAndExtractProtoc() throws IOException {
         String url = getProtocDownloadUrl(OS_NAME, OS_ARCH);
