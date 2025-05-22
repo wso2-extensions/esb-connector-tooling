@@ -117,18 +117,6 @@
                                 {
                                     "type": "attribute",
                                     "value": {
-                                        "name": "serverCrtPath",
-                                        "displayName": "Certificate crt file path",
-                                        "inputType": "string",
-                                        "defaultValue": "",
-                                        "required": "false",
-                                        "helpTip": "The port for the root URL.",
-                                        "enableCondition": [{"tlsEnabled":"true"}]
-                                    }
-                                },
-                                {
-                                    "type": "attribute",
-                                    "value": {
                                         "name": "authType",
                                         "displayName": "Authentication Type",
                                         "inputType": "combo",
@@ -137,7 +125,6 @@
                                         "helpTip": "The authentication type for the connection.",
                                         "comboValues": [
                                             "No Auth",
-                                            "API Key",
                                             "Basic Auth",
                                             "Bearer Token"
                                         ]

@@ -66,7 +66,7 @@ public class GRPCConnectorGenerator {
      * @param integrationProjectPath The integration project path.
      * @throws ConnectorGenException If an error occurs during connector generation.
      */
-    public static void generateConnector(String protoFile, String connectorPath, String miVersion, String integrationProjectPath) throws ConnectorGenException {
+    public static String generateConnector(String protoFile, String connectorPath, String miVersion, String integrationProjectPath) throws ConnectorGenException {
 
         // 1. Download + Extract protoc
         try {
@@ -89,7 +89,7 @@ public class GRPCConnectorGenerator {
             );
             LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
             if (!success) {
-                return;
+                return null;
             }
             FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
             VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
@@ -103,6 +103,7 @@ public class GRPCConnectorGenerator {
         } catch (IOException | InterruptedException e) {
             throw new ConnectorGenException(e.getMessage());
         }
+        return connectorPath;
     }
 
     private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName) {
