@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
@@ -51,6 +52,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_103;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.capitalizeFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.deleteDirectory;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getGetterNames;
@@ -75,7 +77,7 @@ public class ProjectGeneratorUtils {
     private static final List<RPCService.RPCCall> operationList = new ArrayList<>();
     private static URLClassLoader classLoader;
 
-    public static void generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
+    public static String generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
                                                 VelocityContext context, String tempJavaPath,
                                                 String integrationProjectPath) {
         String projectPath = metadata.getConnectorPath();
@@ -86,7 +88,7 @@ public class ProjectGeneratorUtils {
         try {
             String artifactId = (String) context.get(ARTIFACTS);
             String connectorName = context.get(CONNECTOR_NAME).toString();
-            pathToConnectorDir = projectPath + "generated/" + artifactId;
+            pathToConnectorDir = projectPath + "/generated/" + artifactId;
             String pathToMainDir = pathToConnectorDir +
                     "/src/main/java/org/wso2/carbon/" + connectorName + "connector";
 
@@ -137,23 +139,31 @@ public class ProjectGeneratorUtils {
 
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             if (compiler == null) {
-                return;
+                return null;
             }
             int result = compiler.run(null, null, null, compileArgs);
             if (result != 0) {
-                return;
+                return null;
             }
 
             classLoader = URLClassLoader.newInstance(new URL[]{tempDir.toFile().toURI().toURL()});
-            generateRPCfunctions(pathToMainDir, pathToResourcesDir, engine, context);
+            try {
+                generateRPCfunctions(pathToMainDir, pathToResourcesDir, engine, context);
+            } catch (IOException e) {
+                LOG.error(String.format(GRPC_CONNECTOR_103.getDescription(), e.getMessage()));
+                return null;
+            }
             deleteDirectory(tempDir);
 
             copyGenResources(protoPath, pathToConnectorDir, engine, context);
             if (integrationProjectPath != null) {
                 copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
             }
+
+            return pathToConnectorDir;
         } catch (IOException e) {
-            LOG.error(GRPC_CONNECTOR_101);
+            LOG.error(GRPC_CONNECTOR_101.getDescription());
+            return null;
         }
     }
 

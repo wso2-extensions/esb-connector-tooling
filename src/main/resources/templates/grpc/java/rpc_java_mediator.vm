@@ -122,20 +122,8 @@ null##
 ## Get the converter method name to use for a given Protocol Buffer type
 ##
 #macro(getConverterMethod $protoType)
-#if($protoType == "TYPE_DOUBLE")
-toDouble##
-#elseif($protoType == "TYPE_FLOAT")
-toFloat##
-#elseif($protoType == "TYPE_INT64" || $protoType == "TYPE_UINT64" || $protoType == "TYPE_FIXED64" || $protoType == "TYPE_SFIXED64" || $protoType == "TYPE_SINT64")
-toLong##
-#elseif($protoType == "TYPE_INT32" || $protoType == "TYPE_UINT32" || $protoType == "TYPE_FIXED32" || $protoType == "TYPE_SFIXED32" || $protoType == "TYPE_SINT32" || $protoType == "TYPE_ENUM")
-toInteger##
-#elseif($protoType == "TYPE_BOOL")
-toBoolean##
-#elseif($protoType == "TYPE_STRING")
+#if($protoType == "TYPE_STRING")
 toString##
-#elseif($protoType == "TYPE_BYTES")
-toByteArray##
 #else
 convert##
 #end
@@ -143,8 +131,10 @@ convert##
 ## Helper function to convert FieldDescriptorProto to Java type
 #macro(convertProtoTypeToJava $fieldDescriptor)
 #if($fieldDescriptor.label == "LABEL_REPEATED")
-    #if($fieldDescriptor.type == "TYPE_DOUBLE" || $fieldDescriptor.type == "TYPE_FLOAT")
+    #if($fieldDescriptor.type == "TYPE_DOUBLE")
     double[]##
+    #elseif($fieldDescriptor.type == "TYPE_FLOAT")
+    float[]##
     #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
     long[]##
     #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")
@@ -166,8 +156,10 @@ convert##
     Object[]##
     #end
 #else
-    #if($fieldDescriptor.type == "TYPE_DOUBLE" || $fieldDescriptor.type == "TYPE_FLOAT")
+    #if($fieldDescriptor.type == "TYPE_DOUBLE")
     double##
+    #elseif($fieldDescriptor.type == "TYPE_FLOAT")
+    float##
     #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
     long##
     #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")

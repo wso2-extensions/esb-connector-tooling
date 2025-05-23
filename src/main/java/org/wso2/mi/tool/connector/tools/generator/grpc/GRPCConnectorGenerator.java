@@ -27,6 +27,7 @@ import org.apache.velocity.app.VelocityEngine;
 import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
+import org.wso2.mi.tool.connector.tools.generator.common.utils.ConnectorBuilderUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,7 +67,7 @@ public class GRPCConnectorGenerator {
      * @param integrationProjectPath The integration project path.
      * @throws ConnectorGenException If an error occurs during connector generation.
      */
-    public static void generateConnector(String protoFile, String connectorPath, String miVersion, String integrationProjectPath) throws ConnectorGenException {
+    public static String generateConnector(String protoFile, String connectorPath, String miVersion, String integrationProjectPath) throws ConnectorGenException {
 
         // 1. Download + Extract protoc
         try {
@@ -89,7 +90,7 @@ public class GRPCConnectorGenerator {
             );
             LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
             if (!success) {
-                return;
+                return null;
             }
             FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
             VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
@@ -99,10 +100,15 @@ public class GRPCConnectorGenerator {
                     .withConnectorPath(connectorPath)
                     .withProtoFileName(protoFileName)
                     .build();
-            generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir, integrationProjectPath);
+            String connectorProjectDir = generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir, integrationProjectPath);
+            if (connectorProjectDir == null) {
+                throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_101.getDescription());
+            }
+            connectorPath = ConnectorBuilderUtils.buildConnector(connectorProjectDir);
         } catch (IOException | InterruptedException e) {
             throw new ConnectorGenException(e.getMessage());
         }
+        return connectorPath;
     }
 
     private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName) {
