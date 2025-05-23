@@ -17,7 +17,7 @@
  */
 package org.wso2.mi.tool.connector.tools.generator.openapi;
 
-import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ConnectorBuilderUtils;
+import org.wso2.mi.tool.connector.tools.generator.common.utils.ConnectorBuilderUtils;
 import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ProjectGeneratorUtils;
 
 /**

@@ -1,4 +1,4 @@
-package org.wso2.mi.tool.connector.tools.generator.openapi.utils;
+package org.wso2.mi.tool.connector.tools.generator.common.utils;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

@@ -27,8 +27,7 @@ import org.apache.velocity.app.VelocityEngine;
 import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
-import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ConnectorBuilderUtils;
-import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ProjectGeneratorUtils;
+import org.wso2.mi.tool.connector.tools.generator.common.utils.ConnectorBuilderUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
