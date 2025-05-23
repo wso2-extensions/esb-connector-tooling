@@ -77,7 +77,7 @@ public class ProjectGeneratorUtils {
     private static final List<RPCService.RPCCall> operationList = new ArrayList<>();
     private static URLClassLoader classLoader;
 
-    public static void generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
+    public static String generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
                                                 VelocityContext context, String tempJavaPath,
                                                 String integrationProjectPath) {
         String projectPath = metadata.getConnectorPath();
@@ -139,11 +139,11 @@ public class ProjectGeneratorUtils {
 
             JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
             if (compiler == null) {
-                return;
+                return null;
             }
             int result = compiler.run(null, null, null, compileArgs);
             if (result != 0) {
-                return;
+                return null;
             }
 
             classLoader = URLClassLoader.newInstance(new URL[]{tempDir.toFile().toURI().toURL()});
@@ -151,7 +151,7 @@ public class ProjectGeneratorUtils {
                 generateRPCfunctions(pathToMainDir, pathToResourcesDir, engine, context);
             } catch (IOException e) {
                 LOG.error(String.format(GRPC_CONNECTOR_103.getDescription(), e.getMessage()));
-                return;
+                return null;
             }
             deleteDirectory(tempDir);
 
@@ -159,8 +159,11 @@ public class ProjectGeneratorUtils {
             if (integrationProjectPath != null) {
                 copyMavenArtifacts(pathToConnectorDir, integrationProjectPath);
             }
+
+            return pathToConnectorDir;
         } catch (IOException e) {
             LOG.error(GRPC_CONNECTOR_101.getDescription());
+            return null;
         }
     }
 

@@ -27,6 +27,8 @@ import org.apache.velocity.app.VelocityEngine;
 import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
+import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ConnectorBuilderUtils;
+import org.wso2.mi.tool.connector.tools.generator.openapi.utils.ProjectGeneratorUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -99,7 +101,11 @@ public class GRPCConnectorGenerator {
                     .withConnectorPath(connectorPath)
                     .withProtoFileName(protoFileName)
                     .build();
-            generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir, integrationProjectPath);
+            String connectorProjectDir = generateConnectorProject(metaData, velocityEngine, velocityForProtoFile, tempOutputDir, integrationProjectPath);
+            if (connectorProjectDir == null) {
+                throw new ConnectorGenException(ErrorMessages.GRPC_CONNECTOR_101.getDescription());
+            }
+            connectorPath = ConnectorBuilderUtils.buildConnector(connectorProjectDir);
         } catch (IOException | InterruptedException e) {
             throw new ConnectorGenException(e.getMessage());
         }
