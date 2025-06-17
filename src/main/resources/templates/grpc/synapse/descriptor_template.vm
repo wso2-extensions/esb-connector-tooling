@@ -1,0 +1,4 @@
+dependencies:
+- groupId: "org.wso2.mi.connector"
+  artifactId: "org.wso2.mi.connector.${connectorName}"
+  version: "${version}"

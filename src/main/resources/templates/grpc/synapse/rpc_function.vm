@@ -5,6 +5,7 @@
     #foreach($entry in $rpcCall.getInput())
     <parameter name="${entry.getName()}" description="The '${entry.getName()}' field for grpc request"/>
     #end
+    <parameter name="jsonPayload" description="The JSON Paylod"/>
     <parameter name="responseVariable" description="The name of the variable to which the response should be stored."/>
     <parameter name="overwriteBody" description="Replace the Message Body in Message Context with the response of the operation."/>
     <sequence>
@@ -15,6 +16,7 @@
         #set($capitalizedKey = "${firstChar}${remainder}")
 
     <class name="org.wso2.carbon.${connectorName}connector.${capitalizedKey}Mediator">
+        <property name="jsonPayload" expression="$func:jsonPayload"/>
         #foreach($entry in $rpcCall.getInput())
         <property name="${entry.getName()}" expression="$func:${entry.getName()}"/>
         #end

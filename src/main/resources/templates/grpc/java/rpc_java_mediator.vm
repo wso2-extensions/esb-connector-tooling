@@ -34,22 +34,22 @@ import ${packageName}.${rpcCall.getOutputName()};
 #else
 import ${packageName}.${javaGrpcStubFile};
 #end
-
-import com.google.gson.Gson;
+import com.google.protobuf.UninitializedMessageException;
+import com.google.protobuf.util.JsonFormat;
 #if($methodsWithArray && !$methodsWithArray.isEmpty() && $methodsWithArray.contains($rpcCall.getRpcCallName()))
 import java.util.Arrays;
 #end
-import java.util.HashMap;
-import java.util.Map;
 import io.grpc.StatusRuntimeException;
-import org.apache.axis2.AxisFault;
+import org.apache.axis2.Constants;
 import org.apache.synapse.MessageContext;
-
 import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.wso2.carbon.connector.core.AbstractConnector;
 
+import java.io.IOException;
+
 import static java.lang.String.format;
+import static org.wso2.integration.connector.core.util.PayloadUtils.removeQuotesIfExist;
 
 ##
 ## ProtoTypeMapper.vm - Velocity Template for Protocol Buffer Type to Java Class mapping
@@ -191,6 +191,7 @@ $result##
 #set($remainder = $rpcCall.getRpcCallName().substring(1))
 #set($capitalizedKey = "${firstChar}${remainder}")
 public class ${capitalizedKey}Mediator extends AbstractConnector {
+    private String jsonPayload;
     #foreach($field in $rpcCall.getInput())
     #set($javaType = "#convertProtoTypeToJava($field)")
     private ${javaType.trim()} ${field.getName()}#if($field.hasDefaultValue()) = ${field.getDefaultValue()}#end;
@@ -219,6 +220,14 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
     }
     #end
 
+    public void setJsonPayload(String jsonPayload) {
+        this.jsonPayload = jsonPayload;
+    }
+
+    public String getJsonPayload() {
+        return jsonPayload;
+    }
+
     @Override
     public void connect(MessageContext context) {
         try {
@@ -230,20 +239,38 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
            #end
 
            #if($isJavaMultipleFiles)
-            ${rpcCall.getInputName()} request = ${rpcCall.getInputName()}.newBuilder()
+              ${rpcCall.getInputName()} request;
            #else
-            ${javaGrpcStubFile}.${rpcCall.getInputName()} request = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder()
+              ${javaGrpcStubFile}.${rpcCall.getInputName()} request;
            #end
-             #foreach($entry in $inputFMethods.entrySet())
-             #set($isArray = $entry.getValue().indexOf("All") > -1)
-             #if($isArray)
-                 .${entry.getValue()}(Arrays.asList($entry.getKey()))
-             #else
-                 .${entry.getValue()}($entry.getKey())
-             #end
-             #end
-                 .build();
 
+           if (jsonPayload != null) {
+              jsonPayload = removeQuotesIfExist(jsonPayload);
+              #if($isJavaMultipleFiles)
+                  ${rpcCall.getInputName()}.Builder builder = ${rpcCall.getInputName()}.newBuilder();
+                  JsonFormat.parser().ignoringUnknownFields().merge(jsonPayload, builder);
+                  request = builder.build();
+              #else
+                  ${javaGrpcStubFile}.${rpcCall.getInputName()}.Builder builder = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder();
+                  JsonFormat.parser().ignoringUnknownFields().merge(jsonPayload, builder);
+                  request = builder.build();
+              #end
+           } else {
+               #if($isJavaMultipleFiles)
+               request = ${rpcCall.getInputName()}.newBuilder()
+               #else
+               request = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder()
+               #end
+                 #foreach($entry in $inputFMethods.entrySet())
+                 #set($isArray = $entry.getValue().indexOf("All") > -1)
+                 #if($isArray)
+                     .${entry.getValue()}(Arrays.asList($entry.getKey()))
+                 #else
+                     .${entry.getValue()}($entry.getKey())
+                 #end
+                 #end
+                     .build();
+           }
            ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub = (${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub) context.getProperty("stub");
 
            #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
@@ -252,20 +279,16 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
            #else
                ${javaGrpcStubFile}.$rpcCall.getOutputName() response = stub.${methodName}(request);
            #end
-           Map<String, Object> map = new HashMap<>();
-           #set($foreachCount = 0)
-           #foreach($entry in $outputFMethods.entrySet())
-           map.put("$entry.key", response.${entry.value}());
-           #end
-           String jsonPayload = new Gson().toJson(map);
+
+           String jsonOutput = JsonFormat.printer().preservingProtoFieldNames().print(response);
            org.apache.axis2.context.MessageContext axisMsgCtx = ((Axis2MessageContext) context).getAxis2MessageContext();
-           JsonUtil.getNewJsonPayload(axisMsgCtx, jsonPayload, true, true);
-           axisMsgCtx.setProperty(org.apache.axis2.Constants.Configuration.MESSAGE_TYPE, "application/json");
-           axisMsgCtx.setProperty(org.apache.axis2.Constants.Configuration.CONTENT_TYPE, "application/json");
+           JsonUtil.getNewJsonPayload(axisMsgCtx, jsonOutput, true, true);
+           axisMsgCtx.setProperty(Constants.Configuration.MESSAGE_TYPE, "application/json");
+           axisMsgCtx.setProperty(Constants.Configuration.CONTENT_TYPE, "application/json");
+        } catch (UninitializedMessageException | IOException e) {
+           handleException(format("Error in ${capitalizedKey}Mediator: %s", e.getMessage()), context);
         } catch (StatusRuntimeException e) {
-           handleException(format("Error in PublishMediator: code %s , cause: %s ", e.getStatus().getCode().name(), e.getStatus().getDescription()), context);
-        } catch (AxisFault e) {
-           handleException("Error in ${capitalizedKey}Mediator:", e, context);
+           handleException(format("Error in ${capitalizedKey}Mediator: code %s , cause: %s ", e.getStatus().getCode().name(), e.getStatus().getDescription()), context);
         }
     }
 }

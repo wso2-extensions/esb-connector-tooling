@@ -22,7 +22,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
-import org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
@@ -162,7 +161,7 @@ public class ProjectGeneratorUtils {
 
             return pathToConnectorDir;
         } catch (IOException e) {
-            LOG.error(GRPC_CONNECTOR_101.getDescription());
+            LOG.error(e.getMessage());
             return null;
         }
     }
@@ -294,15 +293,10 @@ public class ProjectGeneratorUtils {
 
         // create assembly directory
         createAssemblyDirectory(pathToConnectorDir + "/src/main/assembly");
+        String assemblyOutputFile = pathToConnectorDir + "/src/main/assembly/assemble-connector.xml";
+        String assemblyTemplate = "templates/grpc/synapse/grpc-assemble-connector.vm";
+        mergeVelocityTemplate(assemblyOutputFile, assemblyTemplate, engine, context);
 
-        // Copy connector files
-        try (InputStream staticFilesStream = classLoader.getResourceAsStream(
-                "connector-files/src/main/assembly/assemble-connector.xml")) {
-            if (staticFilesStream != null) {
-                Files.copy(staticFilesStream, Paths.get(pathToConnectorDir +
-                        "/src/main/assembly/assemble-connector.xml"), StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
         // Determine the template based on the auth type
         String outputFile;
         String template = "templates/grpc/synapse/init_config.vm";
@@ -341,6 +335,10 @@ public class ProjectGeneratorUtils {
         String outputFile = pathToConnectorDir + "/pom.xml";
         String template = "templates/grpc/synapse/pom_template.vm";
         mergeVelocityTemplate(outputFile, template, engine, context);
+
+        String descriptorFile = pathToConnectorDir + "/descriptor.yml";
+        String descriptor = "templates/grpc/synapse/descriptor_template.vm";
+        mergeVelocityTemplate(descriptorFile, descriptor, engine, context);
 
         outputFile = pathToResourcesDir + "/connector.xml";
         template = "templates/grpc/synapse/connector_template.vm";
