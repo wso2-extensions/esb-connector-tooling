@@ -55,7 +55,7 @@
                             "inputType": "stringOrExpression",
                             "defaultValue": "",
                             "required": "true",
-                            "helpTip": "JSON Value"
+                            "helpTip": "Provide a JSON object that aligns with your proto message fields."
                         }
                     }
                     #if ($rpcCall.getInput().size() > 0)
