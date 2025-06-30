@@ -27,13 +27,39 @@
                           "required": "true",
                           "helpTip": "Connection to be used"
                         }
+                    },
+                    {
+                        "type": "attribute",
+                        "value": {
+                          "name": "InputFormat",
+                          "displayName": "Input Type",
+                          "inputType": "combo",
+                          "defaultValue": "JSON",
+                          "required": "true",
+                          "helpTip": "Format to Input Data",
+                          "hidden": true,
+                          "comboValues": [
+                            "JSON",
+                            "Form"
+                            ]
+                        }
+                    },
+                    {
+                        "type": "attribute",
+                        "value": {
+                            "enableCondition": [{
+                                "InputFormat": "JSON"
+                            }],
+                            "name": "jsonPayload",
+                            "displayName": "Input JSON Payload",
+                            "inputType": "stringOrExpression",
+                            "defaultValue": "",
+                            "required": "true",
+                            "helpTip": "Provide a JSON object that aligns with your proto message fields."
+                        }
                     }
                     #if ($rpcCall.getInput().size() > 0)
-                    ,{
-                        "type":"attributeGroup",
-                        "value":{
-                            "groupName": "Input Values",
-                            "elements":[
+                    ,
                                 #set($parameterList = $rpcCall.getInput())
                                 #foreach ($param in $parameterList)
                                     {
@@ -44,13 +70,14 @@
                                             "inputType": "stringOrExpression",
                                             "defaultValue": "$param.getDefaultValue()",
                                             "required": "true",
-                                            "helpTip": "$param.getName()"
+                                            "helpTip": "$param.getName()",
+                                            "enableCondition": [{
+                                                 "InputFormat": "Form"
+                                            }]
                                         }
                                     }#if($foreach.hasNext),#end
                                 #end
-                            ]
-                        }
-                    }
+
                     #end
                     #if ($hasResponseModel==true)
                     ,{

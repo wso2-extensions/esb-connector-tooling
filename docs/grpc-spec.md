@@ -12,6 +12,8 @@
 4. [Notes & Limitations](#notes--limitations)
 
 ---
+The following sections outline the supported features and limitations of the tool when working with gRPC and Protobuf. This tool supports proto version 2.0 and 3.0.
+
 ## 1. Authentication
 **gRPC Authentication** refers to the mechanisms used to securely validate and authorize client-server communications over the gRPC protocol. In this tool, we support **TLS** for encrypted transmission and allow the use of custom headers (e.g., `Authorization`) to carry credentials or tokens. Other authentication mechanisms are not currently supported.
 ## 2. Protobuf Data Types
@@ -48,6 +50,10 @@ message Outer {
   // ...
 }
 ```
+**Note:**
+- The optional and the required fields support in the tool is based on the proto2 syntax. 
+- In proto3, all fields are considered optional by default.
+
 ### Nested Message Type 
 1.
 ```proto
@@ -91,6 +97,7 @@ Below java code option can be supported,
 | **Outer Class Name Override** | ✅       | `option java_outer_classname`                                              |
 | **Java Package Name Override** | ✅       | `option java_package`                                                      |
 
+## 4. Notes & Limitations
 **Note:**
 - Not supported for multiple package imports
 - Not supported for the deadline option  
