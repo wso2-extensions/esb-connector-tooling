@@ -52,7 +52,8 @@
                             }],
                             "name": "jsonPayload",
                             "displayName": "Input JSON Payload",
-                            "inputType": "stringOrExpression",
+                            "inputType": "expressionTextArea",
+                            "rowCount": 5,
                             "defaultValue": "",
                             "required": "true",
                             "helpTip": "Provide a JSON object that aligns with your proto message fields."
