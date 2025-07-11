@@ -46,7 +46,7 @@ import org.apache.synapse.commons.json.JsonUtil;
 import org.apache.synapse.core.axis2.Axis2MessageContext;
 import org.apache.synapse.util.InlineExpressionUtil;
 import org.jaxen.JaxenException;
-import org.wso2.carbon.connector.core.AbstractConnector;
+import org.wso2.integration.connector.core.AbstractConnectorOperation;
 
 import java.io.IOException;
 
@@ -192,7 +192,7 @@ $result##
 #set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toUpperCase())
 #set($remainder = $rpcCall.getRpcCallName().substring(1))
 #set($capitalizedKey = "${firstChar}${remainder}")
-public class ${capitalizedKey}Mediator extends AbstractConnector {
+public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
     private String jsonPayload;
     #foreach($field in $rpcCall.getInput())
     #set($javaType = "#convertProtoTypeToJava($field)")
@@ -231,7 +231,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
     }
 
     @Override
-    public void connect(MessageContext context) {
+    public void execute(MessageContext context, String responseVariable, Boolean overwriteBody) {
         try {
            #set($setters = [])
            #foreach($entry in $rpcCall.getInput())
@@ -284,10 +284,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnector {
            #end
 
            String jsonOutput = JsonFormat.printer().preservingProtoFieldNames().print(response);
-           org.apache.axis2.context.MessageContext axisMsgCtx = ((Axis2MessageContext) context).getAxis2MessageContext();
-           JsonUtil.getNewJsonPayload(axisMsgCtx, jsonOutput, true, true);
-           axisMsgCtx.setProperty(Constants.Configuration.MESSAGE_TYPE, "application/json");
-           axisMsgCtx.setProperty(Constants.Configuration.CONTENT_TYPE, "application/json");
+           handleConnectorResponse(context, responseVariable, overwriteBody, jsonOutput, null, null);
         } catch (JaxenException | UninitializedMessageException | IOException e) {
            handleException(format("Error in ${capitalizedKey}Mediator: %s", e.getMessage()), context);
         } catch (StatusRuntimeException e) {
