@@ -82,7 +82,7 @@
                             <${hash}assign hasPrevious = false>
                             #set($count = 1)
                             #foreach ($parameter in $operation.getRequestParameters())
-                                <${hash}if (args.arg${count})?has_content>#if($count > 1)<${hash}if hasPrevious>,</${hash}if>#end"$parameter.getName()":#if ($parameter.getJsonDescription() == " Type: integer" || $parameter.getJsonDescription() == " Type: boolean")${ds}${ocb}args.arg${count}${ccb}#else"${ds}${ocb}args.arg${count}${ccb}"#end#if($count < $operation.getRequestParameters().size())<${hash}assign hasPrevious = true>#end</${hash}if>
+                                <${hash}if (args.arg${count})?has_content>#if($count > 1)<${hash}if hasPrevious>,</${hash}if>#end"$parameter.getName()":#if ($parameter.getJsonDescription() == " Type: integer" || $parameter.getJsonDescription() == " Type: boolean" || $parameter.getJsonDescription() == " Type: array")${ds}${ocb}args.arg${count}${ccb}#else"${ds}${ocb}args.arg${count}${ccb}"#end#if($count < $operation.getRequestParameters().size())<${hash}assign hasPrevious = true>#end</${hash}if>
                                 #set($count = $count + 1)
                             #end
                             }]]>
