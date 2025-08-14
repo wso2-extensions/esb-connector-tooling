@@ -95,13 +95,6 @@
             <version>3.21.12</version>
         </dependency>
 
-        <!-- gRPC dependencies (1.70.0) -->
-        <dependency>
-            <groupId>io.grpc</groupId>
-            <artifactId>grpc-netty</artifactId>
-            <version>1.70.0</version>
-        </dependency>
-
         <!-- Exclude protobuf-java from transitive pull-ins, so we only have 3.21.12 -->
         <dependency>
             <groupId>io.grpc</groupId>
