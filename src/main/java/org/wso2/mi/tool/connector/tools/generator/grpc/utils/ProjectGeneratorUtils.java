@@ -39,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -263,7 +264,7 @@ public class ProjectGeneratorUtils {
 
         Files.createDirectories(Paths.get(pathToConnectorDir));
         Files.createDirectories(Paths.get(pathToMainDir));
-        moveGeneratedFiles(tempJavaPath, pathToMainDir);
+        moveGeneratedFiles(tempJavaPath, pathToMainDir, context);
         Files.createDirectories(Paths.get(pathToConnectorDir + "/docs"));
         Files.createDirectories(Paths.get(pathToConnectorDir + "/gen_resources"));
         Files.createDirectories(Paths.get(pathToResourcesDir + "/config"));
@@ -476,7 +477,7 @@ public class ProjectGeneratorUtils {
         });
     }
 
-    private static void moveGeneratedFiles(String sourceDir, String destinationDir) {
+    private static void moveGeneratedFiles(String sourceDir, String destinationDir, VelocityContext context) {
         File src = new File(sourceDir);
         File dest = new File(destinationDir);
 
@@ -496,13 +497,39 @@ public class ProjectGeneratorUtils {
                             Path relativePath = src.toPath().relativize(source);
                             Path target = dest.toPath().resolve(relativePath);
                             Files.createDirectories(target.getParent());
-                            Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+
+                            // Read the original file content
+                            List<String> lines = Files.readAllLines(source);
+
+
+                            // If no package declaration exists, add it as the first line
+                            if (context.get("javaPackage") == null || context.get("javaPackage").toString().isEmpty()
+                                    && context.get("package") == null || context.get("package").toString().isEmpty()) {
+                                List<String> modifiedLines = new ArrayList<>();
+                                modifiedLines.add("package org.wso2.carbon." + context.get("connectorName") + "connector;");
+
+                                // Add empty line after package declaration if the first line isn't empty
+                                if (!lines.isEmpty() && !lines.get(0).trim().isEmpty()) {
+                                    modifiedLines.add("");
+                                }
+
+                                modifiedLines.addAll(lines);
+
+                                // Write the modified content to the target file
+                                Files.write(target, modifiedLines, StandardOpenOption.CREATE,
+                                        StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+                            } else {
+                                // If package already exists or no package specified, just copy normally
+                                Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
+                            }
+
                             Files.delete(source);
                         } catch (IOException e) {
                             LOG.error("Error processing file: " + source + " - " + e.getMessage());
                         }
                     });
 
+            // Clean up empty directories
             Files.walk(src.toPath())
                     .sorted(Comparator.reverseOrder())
                     .filter(path -> !path.equals(src.toPath()))
@@ -518,6 +545,7 @@ public class ProjectGeneratorUtils {
                         }
                     });
 
+            // Delete source directory if empty
             try {
                 if (Files.list(src.toPath()).count() == 0) {
                     Files.delete(src.toPath());
@@ -527,8 +555,10 @@ public class ProjectGeneratorUtils {
             } catch (IOException e) {
                 LOG.error("Error deleting source directory: " + src.toPath() + " - " + e.getMessage());
             }
+
         } catch (IOException e) {
             LOG.error(e.getMessage());
         }
     }
+
 }

@@ -48,6 +48,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_JAV
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.validateOrThrow;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.ProjectGeneratorUtils.generateConnectorProject;
 
 /**
@@ -111,7 +112,8 @@ public class GRPCConnectorGenerator {
         return connectorPath;
     }
 
-    private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName) {
+    private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName)
+            throws ConnectorGenException {
         VelocityContext context = new VelocityContext();
         initVelocityEngine();
         // Iterate through each proto file
@@ -121,6 +123,11 @@ public class GRPCConnectorGenerator {
             boolean javaMultipleFiles = fileProto.getOptions().getJavaMultipleFiles();
             String javaPackage = fileProto.getOptions().getJavaPackage();
             if (!javaPackage.isEmpty()) {
+                try {
+                    validateOrThrow(javaPackage);
+                } catch (ConnectorGenException e) {
+                    throw new ConnectorGenException(e.getMessage());
+                }
                 context.put("javaPackage", javaPackage);
             }
             context.put("isJavaMultipleFiles", javaMultipleFiles);
