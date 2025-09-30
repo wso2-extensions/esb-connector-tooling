@@ -43,6 +43,12 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACT
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_VERSION;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.GROUP_ID;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.IS_JAVA_GRPC_STUB_FILE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.IS_JAVA_MULTIPLE_FILES;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.JAVA_GRPC_STUB_FILE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.JAVA_PACKAGE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PACKAGE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PROTO_FILE_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_JAVA_DIRECTORY;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
@@ -128,22 +134,22 @@ public class GRPCConnectorGenerator {
                 } catch (ConnectorGenException e) {
                     throw new ConnectorGenException(e.getMessage());
                 }
-                context.put("javaPackage", javaPackage);
+                context.put(JAVA_PACKAGE, javaPackage);
             }
-            context.put("isJavaMultipleFiles", javaMultipleFiles);
+            context.put(IS_JAVA_MULTIPLE_FILES, javaMultipleFiles);
             if (javaOuterClassname != null && !javaOuterClassname.isEmpty()) {
-                context.put("javaGrpcStubFile", javaOuterClassname);
-                context.put("isJavaGrpcStubFile", true);
+                context.put(JAVA_GRPC_STUB_FILE, javaOuterClassname);
+                context.put(IS_JAVA_GRPC_STUB_FILE, true);
             } else {
-                context.put("isJavaGrpcStubFile", false);
+                context.put(IS_JAVA_GRPC_STUB_FILE, false);
             }
 
             if (!name.equals(protoFileName)) {
                 continue;
             }
-            context.put("protoFileName", name);
+            context.put(PROTO_FILE_NAME, name);
             String aPackage = fileProto.getPackage();
-            context.put("package", aPackage);
+            context.put(PACKAGE, aPackage);
             Map<String, DescriptorProtos.DescriptorProto> messageTypeMap =
                     fileProto.getMessageTypeList().stream()
                             .collect(Collectors.toMap(

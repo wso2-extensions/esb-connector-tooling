@@ -52,6 +52,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.JAVA_PACKAGE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PACKAGE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_103;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.capitalizeFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.deleteDirectory;
@@ -503,10 +505,10 @@ public class ProjectGeneratorUtils {
 
 
                             // If no package declaration exists, add it as the first line
-                            if (context.get("javaPackage") == null || context.get("javaPackage").toString().isEmpty()
-                                    && context.get("package") == null || context.get("package").toString().isEmpty()) {
+                            if (context.get(JAVA_PACKAGE) == null || context.get(JAVA_PACKAGE).toString().isEmpty()
+                                    && context.get(PACKAGE) == null || context.get(PACKAGE).toString().isEmpty()) {
                                 List<String> modifiedLines = new ArrayList<>();
-                                modifiedLines.add("package org.wso2.carbon." + context.get("connectorName") + "connector;");
+                                modifiedLines.add("package org.wso2.carbon." + context.get(CONNECTOR_NAME) + "connector;");
 
                                 // Add empty line after package declaration if the first line isn't empty
                                 if (!lines.isEmpty() && !lines.get(0).trim().isEmpty()) {
