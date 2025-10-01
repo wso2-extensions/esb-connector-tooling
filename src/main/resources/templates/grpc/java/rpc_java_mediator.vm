@@ -26,13 +26,22 @@ package org.wso2.carbon.${connectorName}connector;
     #set($packageName = $package )
     #set($packageN = $package)
 #end
-#if($isJavaMultipleFiles)
-import ${packageName}.${javaGrpcStubFile};
-import ${packageName}.${javaGrpcServerFile};
-import ${packageName}.${rpcCall.getInputName()};
-import ${packageName}.${rpcCall.getOutputName()};
+
+## Safe package prefix (adds trailing dot only when packageName is non-empty)
+#set($pkgPrefix = "")
+#if($packageName && $packageName.trim() != "")
+  #set($pkgPrefix = "${packageName}.")
+#end
+
+#if($isJavaMultipleFiles && $pkgPrefix && $pkgPrefix != "")
+import ${pkgPrefix}${javaGrpcStubFile};
+import ${pkgPrefix}${javaGrpcServerFile};
+import ${pkgPrefix}${rpcCall.getInputName()};
+import ${pkgPrefix}${rpcCall.getOutputName()};
 #else
-import ${packageName}.${javaGrpcStubFile};
+#if($pkgPrefix && $pkgPrefix != "")
+import ${pkgPrefix}${javaGrpcStubFile};
+#end
 #end
 import com.google.protobuf.UninitializedMessageException;
 import com.google.protobuf.util.JsonFormat;
@@ -130,74 +139,102 @@ toString##
 convert##
 #end
 #end
+
 ## Helper function to convert FieldDescriptorProto to Java type
 #macro(convertProtoTypeToJava $fieldDescriptor)
-#if($fieldDescriptor.label == "LABEL_REPEATED")
-    #if($fieldDescriptor.type == "TYPE_DOUBLE")
-    double[]##
-    #elseif($fieldDescriptor.type == "TYPE_FLOAT")
-    float[]##
-    #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
-    long[]##
-    #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")
-    int[]##
-    #elseif($fieldDescriptor.type == "TYPE_BOOL")
-    boolean[]##
-    #elseif($fieldDescriptor.type == "TYPE_STRING")
-    String[]##
-    #elseif($fieldDescriptor.type == "TYPE_BYTES")
-    byte[][]##
-    #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
+  ## If it's a message type, derive simple name (no proto package)
+  #set($simpleTypeName = "")
+  #if($fieldDescriptor.type == "TYPE_MESSAGE")
+    #if($package && $package.trim() != "")
+        #set($simpleTypeName = $fieldDescriptor.typeName.replace($package + ".", "").trim())
+    #else
+        #set($simpleTypeName = $fieldDescriptor.typeName.trim())
+    #end
+  #end
+
+  ## Build FQCN for message types (no nested macros)
+  #set($fqcn = "")
+  #if($fieldDescriptor.type == "TYPE_MESSAGE")
     #if($isJavaMultipleFiles)
-    #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+      #if($packageName && $packageName.trim() != "")
+        #set($fqcn = "$packageName.$simpleTypeName")
+      #else
+        #set($fqcn = "$simpleTypeName")
+      #end
     #else
-    #set($result = ${packageName}+"."+${javaGrpcStubFile}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+      #if($packageName && $packageName.trim() != "")
+        #set($fqcn = "$packageName.$javaGrpcStubFile$simpleTypeName")
+      #else
+        #set($fqcn = "$javaGrpcStubFile$simpleTypeName")
+      #end
     #end
-    $result##
-    #else
-    Object[]##
-    #end
-#else
+  #end
+
+  ## REPEATED fields
+  #if($fieldDescriptor.label == "LABEL_REPEATED")
     #if($fieldDescriptor.type == "TYPE_DOUBLE")
-    double##
+      double[]##
     #elseif($fieldDescriptor.type == "TYPE_FLOAT")
-    float##
+      float[]##
     #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
-    long##
+      long[]##
     #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")
-    int##
+      int[]##
     #elseif($fieldDescriptor.type == "TYPE_BOOL")
-    boolean##
+      boolean[]##
     #elseif($fieldDescriptor.type == "TYPE_STRING")
-    String##
+      String[]##
     #elseif($fieldDescriptor.type == "TYPE_BYTES")
-    byte[]##
+      byte[][]##
     #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
-    #if($isJavaMultipleFiles)
-    #set($result = ${packageName}+${fieldDescriptor.typeName.replace($package + ".", "").trim()} + "[]")
+      #set($arraySuffix = "[]")
+      #set($result = "$fqcn$arraySuffix")
+      $result##
     #else
-    #set($result = ${packageName}+"."+${javaGrpcStubFile}+${fieldDescriptor.typeName.replace($package + ".", "").trim()})
+      Object[]##
     #end
-    $result##
+
+  ## NON-REPEATED fields
+  #else
+    #if($fieldDescriptor.type == "TYPE_DOUBLE")
+      double##
+    #elseif($fieldDescriptor.type == "TYPE_FLOAT")
+      float##
+    #elseif($fieldDescriptor.type == "TYPE_INT64" || $fieldDescriptor.type == "TYPE_UINT64" || $fieldDescriptor.type == "TYPE_FIXED64" || $fieldDescriptor.type == "TYPE_SFIXED64" || $fieldDescriptor.type == "TYPE_SINT64")
+      long##
+    #elseif($fieldDescriptor.type == "TYPE_INT32" || $fieldDescriptor.type == "TYPE_UINT32" || $fieldDescriptor.type == "TYPE_FIXED32" || $fieldDescriptor.type == "TYPE_SFIXED32" || $fieldDescriptor.type == "TYPE_SINT32" || $fieldDescriptor.type == "TYPE_ENUM")
+      int##
+    #elseif($fieldDescriptor.type == "TYPE_BOOL")
+      boolean##
+    #elseif($fieldDescriptor.type == "TYPE_STRING")
+      String##
+    #elseif($fieldDescriptor.type == "TYPE_BYTES")
+      byte[]##
+    #elseif($fieldDescriptor.type == "TYPE_MESSAGE")
+      $fqcn##
     #else
-    Object##
+      Object##
     #end
+  #end
 #end
-#end
+
 #macro(getTypeName $input $typePackageName)
 #set($result = $input.replace($typePackageName + ".", ""))
 $result##
 #end
+
 #set($rpcName = $rpcCall.getRpcCallName())
 #set($firstChar = $rpcCall.getRpcCallName().substring(0,1).toUpperCase())
 #set($remainder = $rpcCall.getRpcCallName().substring(1))
 #set($capitalizedKey = "${firstChar}${remainder}")
+
 public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
     private String jsonPayload;
     #foreach($field in $rpcCall.getInput())
     #set($javaType = "#convertProtoTypeToJava($field)")
     private ${javaType.trim()} ${field.getName()}#if($field.hasDefaultValue()) = ${field.getDefaultValue()}#end;
     #end
+
     ## Generate getters and setters
     #foreach($field in $rpcCall.getInput())
     #set($protoType = $field.getType().toString())
@@ -274,7 +311,9 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
                  #end
                      .build();
            }
-           ${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub stub = (${packageName}.${javaGrpcServerFile}.${serviceName}BlockingStub) context.getProperty("stub");
+
+           ${pkgPrefix}${javaGrpcServerFile}.${serviceName}BlockingStub stub =
+               (${pkgPrefix}${javaGrpcServerFile}.${serviceName}BlockingStub) context.getProperty("stub");
 
            #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
            #if($isJavaMultipleFiles)
@@ -299,7 +338,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
 #if($protoToJavaMap.containsKey($fieldDescriptorProto.type))
   $protoToJavaMap.get($fieldDescriptorProto.type)##
 #elseif($fieldDescriptorProto.type == "TYPE_MESSAGE")
-  ${packageName}.#getTypeName($fieldDescriptorProto.typeName, $packageN)##
+  ${pkgPrefix}#getTypeName($fieldDescriptorProto.typeName, $packageN)##
 #else
   Object##
 #end
@@ -311,7 +350,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
 #macro(getJavaType $fieldDescriptorProto)
 #if($fieldDescriptorProto.label == "LABEL_REPEATED")
   #if($fieldDescriptorProto.type == "TYPE_MESSAGE")
-    ${packageName}.#getTypeName($fieldDescriptorProto.typeName, $packageN)[]##
+    ${pkgPrefix}#getTypeName($fieldDescriptorProto.typeName, $packageN)[]##
   #else
     #getJavaClassName($fieldDescriptorProto)[]##
   #end
@@ -319,6 +358,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
   #getJavaClassName($fieldDescriptorProto)##
 #end
 #end
+
 ##
 ## Checks if a Protocol Buffer type maps to a Java primitive type.
 ##

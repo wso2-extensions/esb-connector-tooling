@@ -19,12 +19,14 @@
 package org.wso2.mi.tool.connector.tools.generator.grpc.utils;
 
 import com.google.protobuf.DescriptorProtos;
+import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -128,5 +130,55 @@ public class CodeGenerationUtils {
         return field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE &&
                 field.getLabel() == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED &&
                 field.getTypeName().endsWith("Entry");
+    }
+
+    // Java reserved keywords
+    public static final Set<String> JAVA_KEYWORDS = Set.of(
+            "abstract","assert","boolean","break","byte","case","catch","char","class",
+            "const","continue","default","do","double","else","enum","extends","final",
+            "finally","float","for","goto","if","implements","import","instanceof","int",
+            "interface","long","native","new","package","private","protected","public",
+            "return","short","static","strictfp","super","switch","synchronized","this",
+            "throw","throws","transient","try","void","volatile","while"
+    );
+
+    /**
+     * Validate whether the given string is a valid java_package option in proto.
+     *
+     * @param packageName the package string to validate
+     * @return true if valid, false otherwise
+     */
+    public static boolean isValidJavaPackage(String packageName) {
+        if (packageName == null || packageName.isEmpty()) {
+            return false;
+        }
+        String[] parts = packageName.split("\\.");
+        for (String part : parts) {
+            // Must match Java identifier rules
+            if (!part.matches("[a-zA-Z_$][a-zA-Z\\d_$]*")) {
+                return false;
+            }
+            // Must not be a reserved keyword
+            if (JAVA_KEYWORDS.contains(part)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Validate and throw a clear error if invalid.
+     *
+     * @param packageName the package string to validate
+     * @throws IllegalArgumentException if invalid
+     */
+    public static void validateOrThrow(String packageName) throws ConnectorGenException {
+        if (!isValidJavaPackage(packageName)) {
+            throw new ConnectorGenException(
+                    "Invalid java_package value: '" + packageName +
+                            "'. Must be a valid Java package identifier (no reserved keywords, " +
+                            "segments must start with letter/underscore, no empty parts)."
+            );
+        }
     }
 }

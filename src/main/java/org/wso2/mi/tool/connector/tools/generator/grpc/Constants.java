@@ -39,5 +39,11 @@ public class Constants {
     public static final String TEMP_JAVA_DIRECTORY = "_grpc_java";
 
     public static final String METHODS_WITH_ARRAY = "methodsWithArray";
+    public static final String JAVA_PACKAGE = "javaPackage";
+    public static final String PACKAGE = "package";
+    public static final String IS_JAVA_MULTIPLE_FILES = "isJavaMultipleFiles";
+    public static final String JAVA_GRPC_STUB_FILE    = "javaGrpcStubFile";
+    public static final String IS_JAVA_GRPC_STUB_FILE = "isJavaGrpcStubFile";
+    public static final String PROTO_FILE_NAME = "protoFileName";
 
 }
