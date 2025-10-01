@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -133,14 +134,61 @@ public class CodeGenerationUtils {
     }
 
     // Java reserved keywords
-    public static final Set<String> JAVA_KEYWORDS = Set.of(
-            "abstract","assert","boolean","break","byte","case","catch","char","class",
-            "const","continue","default","do","double","else","enum","extends","final",
-            "finally","float","for","goto","if","implements","import","instanceof","int",
-            "interface","long","native","new","package","private","protected","public",
-            "return","short","static","strictfp","super","switch","synchronized","this",
-            "throw","throws","transient","try","void","volatile","while"
-    );
+    public static final Set<String> JAVA_KEYWORDS;
+
+    static {
+        JAVA_KEYWORDS = new HashSet<>();
+        JAVA_KEYWORDS.add("abstract");
+        JAVA_KEYWORDS.add("assert");
+        JAVA_KEYWORDS.add("boolean");
+        JAVA_KEYWORDS.add("break");
+        JAVA_KEYWORDS.add("byte");
+        JAVA_KEYWORDS.add("case");
+        JAVA_KEYWORDS.add("catch");
+        JAVA_KEYWORDS.add("char");
+        JAVA_KEYWORDS.add("class");
+        JAVA_KEYWORDS.add("const");
+        JAVA_KEYWORDS.add("continue");
+        JAVA_KEYWORDS.add("default");
+        JAVA_KEYWORDS.add("do");
+        JAVA_KEYWORDS.add("double");
+        JAVA_KEYWORDS.add("else");
+        JAVA_KEYWORDS.add("enum");
+        JAVA_KEYWORDS.add("extends");
+        JAVA_KEYWORDS.add("final");
+        JAVA_KEYWORDS.add("finally");
+        JAVA_KEYWORDS.add("float");
+        JAVA_KEYWORDS.add("for");
+        JAVA_KEYWORDS.add("goto");
+        JAVA_KEYWORDS.add("if");
+        JAVA_KEYWORDS.add("implements");
+        JAVA_KEYWORDS.add("import");
+        JAVA_KEYWORDS.add("instanceof");
+        JAVA_KEYWORDS.add("int");
+        JAVA_KEYWORDS.add("interface");
+        JAVA_KEYWORDS.add("long");
+        JAVA_KEYWORDS.add("native");
+        JAVA_KEYWORDS.add("new");
+        JAVA_KEYWORDS.add("package");
+        JAVA_KEYWORDS.add("private");
+        JAVA_KEYWORDS.add("protected");
+        JAVA_KEYWORDS.add("public");
+        JAVA_KEYWORDS.add("return");
+        JAVA_KEYWORDS.add("short");
+        JAVA_KEYWORDS.add("static");
+        JAVA_KEYWORDS.add("strictfp");
+        JAVA_KEYWORDS.add("super");
+        JAVA_KEYWORDS.add("switch");
+        JAVA_KEYWORDS.add("synchronized");
+        JAVA_KEYWORDS.add("this");
+        JAVA_KEYWORDS.add("throw");
+        JAVA_KEYWORDS.add("throws");
+        JAVA_KEYWORDS.add("transient");
+        JAVA_KEYWORDS.add("try");
+        JAVA_KEYWORDS.add("void");
+        JAVA_KEYWORDS.add("volatile");
+        JAVA_KEYWORDS.add("while");
+    }
 
     /**
      * Validate whether the given string is a valid java_package option in proto.
