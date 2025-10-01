@@ -129,11 +129,7 @@ public class GRPCConnectorGenerator {
             boolean javaMultipleFiles = fileProto.getOptions().getJavaMultipleFiles();
             String javaPackage = fileProto.getOptions().getJavaPackage();
             if (!javaPackage.isEmpty()) {
-                try {
-                    validateOrThrow(javaPackage);
-                } catch (ConnectorGenException e) {
-                    throw new ConnectorGenException(e.getMessage());
-                }
+                validateOrThrow(javaPackage);
                 context.put(JAVA_PACKAGE, javaPackage);
             }
             context.put(IS_JAVA_MULTIPLE_FILES, javaMultipleFiles);

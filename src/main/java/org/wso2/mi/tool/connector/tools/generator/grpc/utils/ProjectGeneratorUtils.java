@@ -505,8 +505,8 @@ public class ProjectGeneratorUtils {
 
 
                             // If no package declaration exists, add it as the first line
-                            if (context.get(JAVA_PACKAGE) == null || context.get(JAVA_PACKAGE).toString().isEmpty()
-                                    && context.get(PACKAGE) == null || context.get(PACKAGE).toString().isEmpty()) {
+                            if ((context.get(JAVA_PACKAGE) == null || context.get(JAVA_PACKAGE).toString().isEmpty())
+                                    && (context.get(PACKAGE) == null || context.get(PACKAGE).toString().isEmpty())) {
                                 List<String> modifiedLines = new ArrayList<>();
                                 modifiedLines.add("package org.wso2.carbon." + context.get(CONNECTOR_NAME) + "connector;");
 

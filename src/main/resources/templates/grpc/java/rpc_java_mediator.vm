@@ -145,7 +145,11 @@ convert##
   ## If it's a message type, derive simple name (no proto package)
   #set($simpleTypeName = "")
   #if($fieldDescriptor.type == "TYPE_MESSAGE")
-    #set($simpleTypeName = $fieldDescriptor.typeName.replace($package + ".", "").trim())
+    #if($package && $package.trim() != "")
+        #set($simpleTypeName = $fieldDescriptor.typeName.replace($package + ".", "").trim())
+    #else
+        #set($simpleTypeName = $fieldDescriptor.typeName.trim())
+    #end
   #end
 
   ## Build FQCN for message types (no nested macros)

@@ -43,7 +43,7 @@
       <outputDirectory>/</outputDirectory>
       <excludes>
         <exclude>org/wso2/carbon/${connectorName}connector/**</exclude>
-        #if($pkgPath && $pkgPath.length() > 0)
+        #if($pkgPath.length() > 0)
           <exclude>$pkgPath/**</exclude>
         #end
         <!-- Always exclude meta/resources you don't want -->
