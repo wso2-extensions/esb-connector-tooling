@@ -230,34 +230,6 @@ $result##
 
 public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
     private String jsonPayload;
-    #foreach($field in $rpcCall.getInput())
-    #set($javaType = "#convertProtoTypeToJava($field)")
-    private ${javaType.trim()} ${field.getName()}#if($field.hasDefaultValue()) = ${field.getDefaultValue()}#end;
-    #end
-
-    ## Generate getters and setters
-    #foreach($field in $rpcCall.getInput())
-    #set($protoType = $field.getType().toString())
-    #set($javaType = "#convertProtoTypeToJava($field)")
-    #set($fieldName = $field.getName())
-    #set($capitalizedName = $fieldName.substring(0,1).toUpperCase() + $fieldName.substring(1))
-
-    public void set${capitalizedName}(String ${fieldName}) {
-        #set($converterMethod = "#getConverterMethod($protoType)")
-        #set($javaClass = "#convertProtoTypeToJava($field)")
-        #if($converterMethod == "convert")
-            this.$fieldName = (${javaClass.trim()}) TypeConverter.convert($fieldName, ${javaClass.trim()}.class);
-        #elseif($converterMethod == "toString")
-            this.$fieldName = $fieldName;
-        #else
-            this.$fieldName = TypeConverter.${converterMethod}($fieldName);
-        #end
-    }
-
-    public ${javaType.trim()} get${capitalizedName}() {
-        return ${fieldName};
-    }
-    #end
 
     public void setJsonPayload(String jsonPayload) {
         this.jsonPayload = jsonPayload;
@@ -278,9 +250,9 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
            #end
 
            #if($isJavaMultipleFiles)
-              ${rpcCall.getInputName()} request;
+              ${rpcCall.getInputName()} request = null;
            #else
-              ${javaGrpcStubFile}.${rpcCall.getInputName()} request;
+              ${javaGrpcStubFile}.${rpcCall.getInputName()} request = null;
            #end
 
            if (jsonPayload != null) {
@@ -296,20 +268,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
                   request = builder.build();
               #end
            } else {
-               #if($isJavaMultipleFiles)
-               request = ${rpcCall.getInputName()}.newBuilder()
-               #else
-               request = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder()
-               #end
-                 #foreach($entry in $inputFMethods.entrySet())
-                 #set($isArray = $entry.getValue().indexOf("All") > -1)
-                 #if($isArray)
-                     .${entry.getValue()}(Arrays.asList($entry.getKey()))
-                 #else
-                     .${entry.getValue()}($entry.getKey())
-                 #end
-                 #end
-                     .build();
+               handleException("Provide JSON value ${capitalizedKey}Mediator", context);
            }
 
            ${pkgPrefix}${javaGrpcServerFile}.${serviceName}BlockingStub stub =
