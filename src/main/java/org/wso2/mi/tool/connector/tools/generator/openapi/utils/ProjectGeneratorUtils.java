@@ -639,7 +639,7 @@ public class ProjectGeneratorUtils {
                         context.put("auth", "noauth");
                     }
                 } else if (securityScheme.getType() == io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP && 
-                          "basic".equalsIgnoreCase(securityScheme.getScheme())) {
+                          securityScheme.getScheme() != null && "basic".equalsIgnoreCase(securityScheme.getScheme())) {
                     context.put("auth", "basic");
                 } else if (securityScheme.getType() == io.swagger.v3.oas.models.security.SecurityScheme.Type.APIKEY) {
                     context.put("auth", "apiKey");
