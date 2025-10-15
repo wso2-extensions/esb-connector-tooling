@@ -625,22 +625,32 @@ public class ProjectGeneratorUtils {
         context.put("artifactId", artifactId);
 
         if (openAPI.getComponents() != null && openAPI.getComponents().getSecuritySchemes() != null) {
-            if (openAPI.getComponents().getSecuritySchemes().containsKey("oauth2")) {
-                if (openAPI.getComponents().getSecuritySchemes().get("oauth2").getFlows().getClientCredentials() != null) {
-                    context.put("auth", "oauth2");
-                    context.put("oauth2flow", "client_credentials");
-                } else if (openAPI.getComponents().getSecuritySchemes().get("oauth2").getFlows().getAuthorizationCode() != null) {
-                    context.put("auth", "oauth2");
-                    context.put("oauth2flow", "authorization_code");
+            Map<String, io.swagger.v3.oas.models.security.SecurityScheme> securitySchemes = openAPI.getComponents().getSecuritySchemes();
+            if (!securitySchemes.isEmpty()) {
+                // Get the first security scheme
+                String firstKey = securitySchemes.keySet().iterator().next();
+                io.swagger.v3.oas.models.security.SecurityScheme securityScheme = securitySchemes.get(firstKey);
+                
+                if (securityScheme.getType() == io.swagger.v3.oas.models.security.SecurityScheme.Type.OAUTH2) {
+                    if (securityScheme.getFlows().getClientCredentials() != null) {
+                        context.put("auth", "oauth2");
+                        context.put("oauth2flow", "client_credentials");
+                    } else if (securityScheme.getFlows().getAuthorizationCode() != null) {
+                        context.put("auth", "oauth2");
+                        context.put("oauth2flow", "authorization_code");
+                    } else {
+                        context.put("auth", "noauth");
+                    }
+                } else if (securityScheme.getType() == io.swagger.v3.oas.models.security.SecurityScheme.Type.HTTP && 
+                          securityScheme.getScheme() != null && "basic".equalsIgnoreCase(securityScheme.getScheme())) {
+                    context.put("auth", "basic");
+                } else if (securityScheme.getType() == io.swagger.v3.oas.models.security.SecurityScheme.Type.APIKEY) {
+                    context.put("auth", "apiKey");
+                    context.put("apiKeyName", securityScheme.getName());
+                    context.put("apiKeyIn", securityScheme.getIn());
                 } else {
                     context.put("auth", "noauth");
                 }
-            } else if (openAPI.getComponents().getSecuritySchemes().containsKey("basic")) {
-                context.put("auth", "basic");
-            } else if (openAPI.getComponents().getSecuritySchemes().containsKey("apiKey")) {
-                context.put("auth", "apiKey");
-                context.put("apiKeyName", openAPI.getComponents().getSecuritySchemes().get("apiKey").getName());
-                context.put("apiKeyIn", openAPI.getComponents().getSecuritySchemes().get("apiKey").getIn());
             } else {
                 context.put("auth", "noauth");
             }

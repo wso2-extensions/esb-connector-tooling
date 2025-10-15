@@ -1,8 +1,8 @@
- {
-    "connectorName" : "$connectorName",
-    "operationName" : "init",
-    "title" : "Init",
-    "help" : "<h1>Init</h1> <b>The init operation.</b>",
+{
+    "connectorName":"$connectorName",
+    "connectionName":"$connectorName",
+    "title":"$connectorName connection",
+    "help":"$connectorName connection",
     "elements" : [
         {
             "type" : "attributeGroup",
