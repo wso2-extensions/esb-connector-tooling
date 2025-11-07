@@ -25,8 +25,6 @@ import org.apache.velocity.app.VelocityEngine;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -117,9 +115,7 @@ public class ProjectGeneratorUtils {
                     .collect(Collectors.toList());
 
             // Iterate and print
-            List<String> javaFilePaths = new ArrayList<>();
             for (AbstractMap.SimpleEntry<String, String> file : javaFiles) {
-                javaFilePaths.add(file.getKey());
                 String fileName = file.getValue();
                 if (fileName.endsWith("Grpc.java")) {
                     context.put("javaGrpcServerFile", fileName.replace(".java", ""));
@@ -129,23 +125,6 @@ public class ProjectGeneratorUtils {
                         context.put("javaGrpcStubFile", fileName.replace(".java", ""));
                     }
                 }
-            }
-
-            // Convert list to array for JavaCompiler
-            String[] compileArgs = new String[javaFilePaths.size() + 2];
-            compileArgs[0] = "-d";
-            compileArgs[1] = tempDir.toString();
-            for (int i = 0; i < javaFilePaths.size(); i++) {
-                compileArgs[i + 2] = javaFilePaths.get(i);
-            }
-
-            JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-            if (compiler == null) {
-                return null;
-            }
-            int result = compiler.run(null, null, null, compileArgs);
-            if (result != 0) {
-                return null;
             }
 
             classLoader = URLClassLoader.newInstance(new URL[]{tempDir.toFile().toURI().toURL()});

@@ -142,7 +142,8 @@ public class ProtocExecutor {
     /**
      * Run the protoc command to generate Java and gRPC stubs.
      */
-    static boolean runProtoc(File protoc, File grpcPlugin, String protoSourceDir, String protocFile, String javaOutDir) throws IOException, InterruptedException {
+    static boolean runProtoc(File protoc, File grpcPlugin, String protoSourceDir, String protocFile, String javaOutDir,
+                             List<String> protos) throws IOException, InterruptedException {
         Files.createDirectories(Paths.get(javaOutDir));
         List<String> command = new ArrayList<>();
         command.add(protoc.getAbsolutePath());
@@ -160,6 +161,9 @@ public class ProtocExecutor {
         // Provide the proto path
         command.add("--proto_path=" + protoSourceDir);
 
+        // Add imports descriptors for the main proto
+        command.add("--include_imports");
+
         // Option 1: Process a specific proto file if provided
         if (protocFile != null && !protocFile.isEmpty()) {
             command.add(protoSourceDir + "/" + protocFile);
@@ -174,6 +178,9 @@ public class ProtocExecutor {
             for (File f : protoFiles) {
                 command.add(f.getAbsolutePath());
             }
+        }
+        if (protos != null && !protos.isEmpty() ) {
+            command.addAll(protos);
         }
 
         ProcessBuilder pb = new ProcessBuilder(command);

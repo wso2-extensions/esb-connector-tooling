@@ -36,8 +36,6 @@ package org.wso2.carbon.${connectorName}connector;
 #if($isJavaMultipleFiles && $pkgPrefix && $pkgPrefix != "")
 import ${pkgPrefix}${javaGrpcStubFile};
 import ${pkgPrefix}${javaGrpcServerFile};
-import ${pkgPrefix}${rpcCall.getInputName()};
-import ${pkgPrefix}${rpcCall.getOutputName()};
 #else
 #if($pkgPrefix && $pkgPrefix != "")
 import ${pkgPrefix}${javaGrpcStubFile};
@@ -252,7 +250,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
            #if($isJavaMultipleFiles)
               ${rpcCall.getInputName()} request = null;
            #else
-              ${javaGrpcStubFile}.${rpcCall.getInputName()} request = null;
+              ${rpcCall.getInputName()} request = null;
            #end
 
            if (jsonPayload != null) {
@@ -263,7 +261,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
                   JsonFormat.parser().ignoringUnknownFields().merge(jsonPayload, builder);
                   request = builder.build();
               #else
-                  ${javaGrpcStubFile}.${rpcCall.getInputName()}.Builder builder = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder();
+                  ${rpcCall.getInputName()}.Builder builder = ${rpcCall.getInputName()}.newBuilder();
                   JsonFormat.parser().ignoringUnknownFields().merge(jsonPayload, builder);
                   request = builder.build();
               #end
@@ -278,7 +276,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
            #if($isJavaMultipleFiles)
                $rpcCall.getOutputName() response = stub.${methodName}(request);
            #else
-               ${javaGrpcStubFile}.$rpcCall.getOutputName() response = stub.${methodName}(request);
+               $rpcCall.getOutputName() response = stub.${methodName}(request);
            #end
 
            String jsonOutput = JsonFormat.printer().preservingProtoFieldNames().print(response);

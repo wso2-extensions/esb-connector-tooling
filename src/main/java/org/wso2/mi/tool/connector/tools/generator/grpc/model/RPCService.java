@@ -46,6 +46,7 @@ public class RPCService {
     public static class RPCCall {
         private final String rpcCallName;
         private final String inputName;
+        private final String reqClassName;
         private final String outputName;
         private final Map<String, DescriptorProtos.FieldDescriptorProto> input;
         private final Map<String, DescriptorProtos.FieldDescriptorProto> output;
@@ -58,6 +59,7 @@ public class RPCService {
             this.input = builder.input;
             this.output = builder.output;
             this.comment = builder.comment;
+            this.reqClassName = builder.reqClassName;
         }
 
         public String getRpcCallName() {
@@ -83,6 +85,9 @@ public class RPCService {
         public String getComment() {
             return comment;
         }
+        public String getReqClassName() {
+            return reqClassName;
+        }
 
         public static class RPCCallBuilder {
             private String rpcCallName;
@@ -92,6 +97,7 @@ public class RPCService {
             private Map<String, DescriptorProtos.FieldDescriptorProto> output = new HashMap<>();
 
             private String comment = "";
+            private String reqClassName;
 
             public RPCCallBuilder rpcCallName(String rpcCallName) {
                 this.rpcCallName = rpcCallName;
@@ -141,6 +147,11 @@ public class RPCService {
 
             public RPCCallBuilder comment(String comment) {
                 this.comment = comment;
+                return this;
+            }
+
+            public RPCCallBuilder reqClassName(String reqClassName) {
+                this.reqClassName = reqClassName;
                 return this;
             }
 

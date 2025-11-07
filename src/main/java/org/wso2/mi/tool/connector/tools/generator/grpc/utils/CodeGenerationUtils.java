@@ -25,8 +25,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -53,6 +58,13 @@ public class CodeGenerationUtils {
         // Load the binary descriptor file
         try (FileInputStream fis = new FileInputStream(descriptorFilePath)) {
             return DescriptorProtos.FileDescriptorSet.parseFrom(fis);
+        }
+    }
+
+    public static DescriptorProtos.DescriptorProto loadDescriptor(String descriptorFilePath) throws IOException {
+        // Load the binary descriptor file
+        try (FileInputStream fis = new FileInputStream(descriptorFilePath)) {
+            return DescriptorProtos.DescriptorProto.parseFrom(fis);
         }
     }
 
@@ -227,6 +239,104 @@ public class CodeGenerationUtils {
                             "'. Must be a valid Java package identifier (no reserved keywords, " +
                             "segments must start with letter/underscore, no empty parts)."
             );
+        }
+    }
+    public static String resolveJavaFqn(Map<String, FileAndMsg> idx, String protoFqn) {
+        FileAndMsg fam = idx.get(protoFqn);
+        if (fam == null) throw new IllegalStateException("Unknown type: " + protoFqn);
+        return messageJavaFqn(fam.file, fam.msg);
+    }
+
+    public static Map<String, FileAndMsg> buildTypeIndex(DescriptorProtos.FileDescriptorSet set) {
+        Map<String, FileAndMsg> map = new HashMap<>();
+        for (DescriptorProtos.FileDescriptorProto file : set.getFileList()) {
+            String pkg = file.hasPackage() ? file.getPackage() : "";
+            // top-level messages
+            for (DescriptorProtos.DescriptorProto msg : file.getMessageTypeList()) {
+                addAllNested(map, file, pkg, "", msg);
+            }
+        }
+        return map;
+    }
+
+    // Recursively index nested messages too: ".pkg.Outer.Inner"
+    private static void addAllNested(Map<String, FileAndMsg> map, DescriptorProtos.FileDescriptorProto file,
+                                     String pkg, String prefix, DescriptorProtos.DescriptorProto msg) {
+        String fullName = "." + (pkg.isEmpty() ? "" : (pkg + ".")) + (prefix.isEmpty() ? "" : (prefix + ".")) + msg.getName();
+        map.put(fullName, new FileAndMsg(file, msg));
+
+        for (DescriptorProtos.DescriptorProto nested : msg.getNestedTypeList()) {
+            addAllNested(map, file, pkg, (prefix.isEmpty() ? msg.getName() : prefix + "." + msg.getName()), nested);
+        }
+    }
+
+    // Build Java FQN for a message using file options
+    static String messageJavaFqn(DescriptorProtos.FileDescriptorProto file, DescriptorProtos.DescriptorProto msg) {
+        String pkg = file.getOptions().hasJavaPackage()
+                ? file.getOptions().getJavaPackage()
+                : (file.hasPackage() ? file.getPackage() : "");
+
+        boolean multi = file.getOptions().getJavaMultipleFiles();
+        String outer = null;
+        if (!multi) {
+            if (file.getOptions().hasJavaOuterClassname()) {
+                outer = file.getOptions().getJavaOuterClassname();
+            } else {
+                String base = file.getName().substring(file.getName().lastIndexOf('/') + 1)
+                        .replace(".proto", "");
+                outer = toOuterClass(base);
+            }
+        }
+
+        // Reconstruct nesting chain for Java (same names as proto nesting)
+        List<String> nesting = new ArrayList<>();
+        collectNesting(msg, nesting); // bottom-up
+        Collections.reverse(nesting);
+        String simple = String.join(".", nesting.isEmpty() ? List.of(msg.getName()) : nesting);
+
+        return multi ? (pkg + "." + simple) : (pkg + "." + outer + "." + simple);
+    }
+
+    // Service Java FQN (same outer rules as messages when multiple_files=false)
+    static String serviceJavaFqn(DescriptorProtos.FileDescriptorProto file, DescriptorProtos.ServiceDescriptorProto svc) {
+        String pkg = file.getOptions().hasJavaPackage()
+                ? file.getOptions().getJavaPackage()
+                : (file.hasPackage() ? file.getPackage() : "");
+        boolean multi = file.getOptions().getJavaMultipleFiles();
+        if (multi) {
+            return pkg + "." + svc.getName() + "Grpc";
+        }
+        String outer = file.getOptions().hasJavaOuterClassname()
+                ? file.getOptions().getJavaOuterClassname()
+                : toOuterClass(file.getName().substring(file.getName().lastIndexOf('/') + 1).replace(".proto",""));
+        return pkg + "." + outer + "$" + svc.getName() + "Grpc"; // inner when single-file (practically, protoc generates outer class wrapping *Grpc)
+    }
+
+    // Collect full nesting name for a message (handles nested messages)
+    private static void collectNesting(DescriptorProtos.DescriptorProto msg, List<String> out) {
+        // DescriptorProto doesn’t carry parents; for Java FQN we only need simple name here.
+        // Nested names are accounted for by addAllNested() when indexing; here simple is enough.
+        out.add(msg.getName());
+    }
+
+    // "common" -> "Common", "my_service" -> "MyService"
+    private static String toOuterClass(String base) {
+        String cleaned = base.replaceAll("[^A-Za-z0-9]", " ");
+        StringBuilder sb = new StringBuilder();
+        for (String part : cleaned.split("\\s+")) {
+            if (part.isEmpty()) continue;
+            sb.append(Character.toUpperCase(part.charAt(0)));
+            if (part.length() > 1) sb.append(part.substring(1));
+        }
+        return sb.toString();
+    }
+
+    public static final class FileAndMsg {
+        final DescriptorProtos.FileDescriptorProto file;
+        final DescriptorProtos.DescriptorProto msg;
+        FileAndMsg(DescriptorProtos.FileDescriptorProto file, DescriptorProtos.DescriptorProto msg) {
+            this.file = file;
+            this.msg = msg;
         }
     }
 }
