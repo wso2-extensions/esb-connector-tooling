@@ -67,7 +67,6 @@ public class GRPCConnectorGenerator {
     private static final Log LOG = LogFactory.getLog(GRPCConnectorGenerator.class);
 
     private static final VelocityEngine velocityEngine = new VelocityEngine();
-    private static DescriptorProtos.DescriptorProto descriptorProto = null;
     private static Map<String, CodeGenerationUtils.FileAndMsg> typeIndex = null;
 
     /**
@@ -106,16 +105,25 @@ public class GRPCConnectorGenerator {
                 return null;
             }
             FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
+            //Handle proto dependencies
             for (DescriptorProtos.FileDescriptorProto fileDescriptorProto:fileDescriptorSet.getFileList()) {
                 ProtocolStringList dependencyList = fileDescriptorProto.getDependencyList();
+                if (fileDescriptorProto.getName().contains("google/protobuf/")) {
+                    // Skip standard protobuf dependencies
+                    continue;
+                }
                 boolean success1 = ProtocExecutor.runProtoc(
                         protocPath.toFile(),
                         grpcPluginPath.toFile(),
                         protoSourceDir,
-                        protoFileName,
+                        fileDescriptorProto.getName(),
                         tempOutputDir,
                         dependencyList
                 );
+                if (!success1) {
+                    LOG.error(ErrorMessages.GRPC_CONNECTOR_104.getDescription());
+                    return null;
+                }
             }
             typeIndex = buildTypeIndex(fileDescriptorSet);
             VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
@@ -143,10 +151,15 @@ public class GRPCConnectorGenerator {
         // Iterate through each proto file
         for (com.google.protobuf.DescriptorProtos.FileDescriptorProto fileProto : descriptorSet.getFileList()) {
             String name = fileProto.getName();
+            if (!name.equals(protoFileName)) {
+                continue;
+            }
+            context.put(PROTO_FILE_NAME, name);
             String javaOuterClassname = fileProto.getOptions().getJavaOuterClassname();
             boolean javaMultipleFiles = fileProto.getOptions().getJavaMultipleFiles();
-            String javaPackage = fileProto.getOptions().getJavaPackage();
-            if (!javaPackage.isEmpty()) {
+
+            if (fileProto.getOptions().hasJavaPackage()) {
+                String javaPackage = fileProto.getOptions().getJavaPackage();
                 validateOrThrow(javaPackage);
                 context.put(JAVA_PACKAGE, javaPackage);
             }
@@ -157,11 +170,6 @@ public class GRPCConnectorGenerator {
             } else {
                 context.put(IS_JAVA_GRPC_STUB_FILE, false);
             }
-
-            if (!name.equals(protoFileName)) {
-                continue;
-            }
-            context.put(PROTO_FILE_NAME, name);
             String aPackage = fileProto.getPackage();
             context.put(PACKAGE, aPackage);
             Map<String, DescriptorProtos.DescriptorProto> messageTypeMap =
@@ -218,21 +226,6 @@ public class GRPCConnectorGenerator {
         context.put(GROUP_ID, "org.wso2.mi.connector");
         context.put(CONNECTOR_NAME, resolvedConnectorName);
         context.put(SERVICE_NAME, serviceName);
-    }
-
-    private static Map<String, DescriptorProtos.FieldDescriptorProto> fieldMap(Map<String, DescriptorProtos.DescriptorProto> messageTypeMap, String result) {
-        Map<String, DescriptorProtos.FieldDescriptorProto> inputFields = new HashMap<>();
-        DescriptorProtos.DescriptorProto descriptorProto = messageTypeMap.get(result);
-        if (descriptorProto == null) {
-            return inputFields;
-        }
-        List<DescriptorProtos.FieldDescriptorProto> fieldList = descriptorProto.getFieldList();
-        if (!fieldList.isEmpty()) {
-            for (DescriptorProtos.FieldDescriptorProto field : fieldList) {
-                inputFields.put(field.getName(), field);
-            }
-        }
-        return inputFields;
     }
 
     private static void initVelocityEngine() {

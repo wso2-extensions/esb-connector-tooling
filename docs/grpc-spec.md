@@ -99,6 +99,6 @@ Below java code option can be supported,
 
 ## 4. Notes & Limitations
 **Note:**
-- Not supported for multiple package imports
 - Not supported for the deadline option  
 - Stream types are not supported
+- Multiple services with one proto file are not supported

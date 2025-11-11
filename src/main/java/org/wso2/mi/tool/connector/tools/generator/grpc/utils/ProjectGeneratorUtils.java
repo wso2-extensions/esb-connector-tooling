@@ -66,7 +66,6 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.METHODS_
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.OUTPUT_FIELD_METHODS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_COMPILE_DIRECTORY;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_101;
 
 /**
  * This handles the generation of the gRPC connector project files.
@@ -482,10 +481,17 @@ public class ProjectGeneratorUtils {
                             // Read the original file content
                             List<String> lines = Files.readAllLines(source);
 
+                            // Check if context has any package info
+                            boolean hasContextPackage =
+                                    (context.get(JAVA_PACKAGE) != null && !context.get(JAVA_PACKAGE).toString().isEmpty()) ||
+                                            (context.get(PACKAGE) != null && !context.get(PACKAGE).toString().isEmpty());
+
+                            // Check if the file already contains a package declaration
+                            boolean fileHasPackage = lines.stream()
+                                    .anyMatch(line -> line.trim().startsWith("package "));
 
                             // If no package declaration exists, add it as the first line
-                            if ((context.get(JAVA_PACKAGE) == null || context.get(JAVA_PACKAGE).toString().isEmpty())
-                                    && (context.get(PACKAGE) == null || context.get(PACKAGE).toString().isEmpty())) {
+                            if (!hasContextPackage && !fileHasPackage) {
                                 List<String> modifiedLines = new ArrayList<>();
                                 modifiedLines.add("package org.wso2.carbon." + context.get(CONNECTOR_NAME) + "connector;");
 
@@ -541,5 +547,4 @@ public class ProjectGeneratorUtils {
             LOG.error(e.getMessage());
         }
     }
-
 }

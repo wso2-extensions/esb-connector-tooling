@@ -23,7 +23,8 @@ public enum ErrorMessages {
     GRPC_CONNECTOR_101("GRPC_CONNECTOR_101", "Error while generating the grpc connector"),
     GRPC_CONNECTOR_102("GRPC_CONNECTOR_102", "Streaming is currently not supported by the tool. " +
             "Therefore, the RPC method `%s` will not be supported in the given connector."),
-    GRPC_CONNECTOR_103("GRPC_CONNECTOR_103", "Error while generating the RPC method in the connector. error: %s");
+    GRPC_CONNECTOR_103("GRPC_CONNECTOR_103", "Error while generating the RPC method in the connector. error: %s"),
+    GRPC_CONNECTOR_104("GRPC_CONNECTOR_104", "Error while generating the proto dependencies.");
 
     private final String code;
     private final String description;
