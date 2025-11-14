@@ -83,10 +83,19 @@ message Outer {
   repeated Address addresses = 2;
 }
 ```
+## Message type with Enum is supported.
+### Message Type with Enum 
+```proto
+enum STATUS {
+  OPEN = 0;
+  INPROGRESS = 1;
+  CLOSE = 2;
+  ON_HOLD = 3;
+}
+```
 Unsupported data types
 1. OneOf scenarios
-2. Enum type
-3. Map type
+2. Map type
 
 ## 3. Java Code Generation Options
 Below java code option can be supported,
