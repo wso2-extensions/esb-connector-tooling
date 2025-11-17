@@ -54,6 +54,7 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PROTO_FI
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_JAVA_DIRECTORY;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.buildTypeIndex;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.resolveJavaFqn;
@@ -193,7 +194,7 @@ public class GRPCConnectorGenerator {
                     if (method.getServerStreaming() || method.getClientStreaming()) {
                         LOG.warn(ErrorMessages.GRPC_CONNECTOR_102.format(method.getName()));
                     } else {
-                        populateRPCcall(rcpMap, method);
+                        populateRPCcall(fileProto, messageTypeMap, rcpMap, method);
                     }
                 }
                 RPCService rpcService = new RPCService.Builder()
@@ -207,19 +208,37 @@ public class GRPCConnectorGenerator {
         return context;
     }
 
-    private static void populateRPCcall(Map<String, RPCService.RPCCall> rcpMap,
+    private static void populateRPCcall(DescriptorProtos.FileDescriptorProto fileProto,
+                                        Map<String, DescriptorProtos.DescriptorProto> messageTypeMap,
+                                        Map<String, RPCService.RPCCall> rcpMap,
                                         DescriptorProtos.MethodDescriptorProto method) {
         String methodName = method.getName();
         String inputType = method.getInputType();
         String outputType = method.getOutputType();
         String inJava = resolveJavaFqn(typeIndex, inputType);
         String outJava = resolveJavaFqn(typeIndex, outputType);
+        String packageName = fileProto.getPackage();
+        Map<String, DescriptorProtos.FieldDescriptorProto> outputFields = fieldMap(messageTypeMap,
+                getTypeName(outputType, packageName));
         RPCService.RPCCall.RPCCallBuilder callBuilder = new RPCService.RPCCall.RPCCallBuilder()
                 .rpcCallName(methodName)
                 .inputName(inJava)
-                .outputName(outJava);
+                .outputName(outJava)
+                .addOutputParam(outputFields);
         RPCService.RPCCall rcpCall = callBuilder.build();
         rcpMap.put(methodName, rcpCall);
+    }
+
+    private static Map<String, DescriptorProtos.FieldDescriptorProto> fieldMap(Map<String, DescriptorProtos.DescriptorProto> messageTypeMap, String result) {
+        Map<String, DescriptorProtos.FieldDescriptorProto> inputFields = new HashMap<>();
+        DescriptorProtos.DescriptorProto descriptorProto = messageTypeMap.get(result);
+        List<DescriptorProtos.FieldDescriptorProto> fieldList = descriptorProto.getFieldList();
+        if (!fieldList.isEmpty()) {
+            for (DescriptorProtos.FieldDescriptorProto field : fieldList) {
+                inputFields.put(field.getName(), field);
+            }
+        }
+        return inputFields;
     }
 
     private static void updateConnectorMetaInfo(VelocityContext context, String serviceName, String resolvedConnectorName) {
