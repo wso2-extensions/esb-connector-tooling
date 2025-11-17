@@ -179,6 +179,9 @@ public class GRPCConnectorGenerator {
                                     descriptorProto -> descriptorProto));
 
             List<DescriptorProtos.ServiceDescriptorProto> serviceList = fileProto.getServiceList();
+            if (serviceList.isEmpty()) {
+                throw new ConnectorGenException("Given proto has no services to generate a connector.");
+            }
             for (DescriptorProtos.ServiceDescriptorProto service : serviceList) {
                 String serviceName = service.getName();
                 String resolvedConnectorName = serviceName.toLowerCase().replace(" ", "");
