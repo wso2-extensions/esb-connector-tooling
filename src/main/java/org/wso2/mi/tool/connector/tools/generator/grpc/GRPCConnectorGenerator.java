@@ -37,9 +37,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ALL_MESSAGES;
@@ -108,21 +110,30 @@ public class GRPCConnectorGenerator {
                 return null;
             }
             FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
-            //Handle proto dependencies
-            for (DescriptorProtos.FileDescriptorProto fileDescriptorProto:fileDescriptorSet.getFileList()) {
-                ProtocolStringList dependencyList = fileDescriptorProto.getDependencyList();
-                if (fileDescriptorProto.getName().contains("google/protobuf/")) {
-                    // Skip standard protobuf dependencies
+            // Handle proto dependencies
+            Set<String> processed = new HashSet<>();
+
+            for (DescriptorProtos.FileDescriptorProto fileDescriptorProto : fileDescriptorSet.getFileList()) {
+                String fileName = fileDescriptorProto.getName();
+                // Skip standard well-known types
+                if (fileName.startsWith("google/protobuf/")) {
                     continue;
                 }
+                // Avoid processing the same file more than once
+                if (!processed.add(fileName)) {
+                    // already processed
+                    continue;
+                }
+                ProtocolStringList dependencyList = fileDescriptorProto.getDependencyList();
                 boolean success1 = ProtocExecutor.runProtoc(
                         protocPath.toFile(),
                         grpcPluginPath.toFile(),
                         protoSourceDir,
-                        fileDescriptorProto.getName(),
+                        fileName,
                         tempOutputDir,
                         dependencyList
                 );
+
                 if (!success1) {
                     LOG.error(ErrorMessages.GRPC_CONNECTOR_104.getDescription());
                     return null;
@@ -236,7 +247,7 @@ public class GRPCConnectorGenerator {
     private static void populateRPCcall(DescriptorProtos.FileDescriptorProto fileProto,
                                         Map<String, DescriptorProtos.DescriptorProto> messageTypeMap,
                                         Map<String, RPCService.RPCCall> rcpMap,
-                                        DescriptorProtos.MethodDescriptorProto method) {
+                                        DescriptorProtos.MethodDescriptorProto method) throws ConnectorGenException {
         String methodName = method.getName();
         String inputType = method.getInputType();
         String outputType = method.getOutputType();

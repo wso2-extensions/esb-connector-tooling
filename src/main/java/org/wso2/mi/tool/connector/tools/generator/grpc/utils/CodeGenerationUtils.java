@@ -118,13 +118,6 @@ public class CodeGenerationUtils {
         }
     }
 
-    public static DescriptorProtos.DescriptorProto loadDescriptor(String descriptorFilePath) throws IOException {
-        // Load the binary descriptor file
-        try (FileInputStream fis = new FileInputStream(descriptorFilePath)) {
-            return DescriptorProtos.DescriptorProto.parseFrom(fis);
-        }
-    }
-
     public static String getTypeName(String input, String packageName) {
         // Use Pattern.quote to escape special characters in the package name
         return input.replaceAll("^\\." + Pattern.quote(packageName) + "\\.", "").replace(".", "");
@@ -243,9 +236,9 @@ public class CodeGenerationUtils {
         }
     }
 
-    public static String resolveJavaFqn(Map<String, FileAndMsg> idx, String protoFqn) {
+    public static String resolveJavaFqn(Map<String, FileAndMsg> idx, String protoFqn) throws ConnectorGenException {
         FileAndMsg fam = idx.get(protoFqn);
-        if (fam == null) throw new IllegalStateException("Unknown type: " + protoFqn);
+        if (fam == null) throw new ConnectorGenException("Unknown type: " + protoFqn);
         return messageJavaFqn(fam.file, fam.msg);
     }
 

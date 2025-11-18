@@ -84,6 +84,7 @@ message Outer {
 }
 ```
 ## Message type with Enum is supported.
+
 ### Message Type with Enum 
 ```proto
 enum STATUS {
@@ -93,7 +94,7 @@ enum STATUS {
   ON_HOLD = 3;
 }
 ```
-Unsupported data types
+## Unsupported data types
 1. OneOf scenarios
 2. Map type
 

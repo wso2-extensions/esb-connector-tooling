@@ -4,8 +4,8 @@
   "TYPE_FLOAT": "number",
   "TYPE_INT64": "string",
   "TYPE_UINT64": "string",
-  "TYPE_FIXED64": "number",
-  "TYPE_SFIXED64": "number",
+  "TYPE_FIXED64": "string",
+  "TYPE_SFIXED64": "string",
   "TYPE_SINT64": "string",
   "TYPE_INT32": "number",
   "TYPE_UINT32": "number",
@@ -124,7 +124,6 @@
   "type": "object",
   "title": "$connectorName $rpcCall.getRpcCallName() Operation Response Schema",
   "description": "Schema representing the output of the $rpcCall.getRpcCallName() operation in $connectorName",
-  "_debug": { "allMessages_size": "#if($allMessages)$allMessages.size()#{else}0#end" },
   "properties": {
     "payload": {
       "type": "object",
