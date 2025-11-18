@@ -35,12 +35,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ALL_MESSAGES;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_VERSION;
@@ -145,10 +147,33 @@ public class GRPCConnectorGenerator {
         return connectorPath;
     }
 
+    static List<DescriptorProtos.DescriptorProto> getAllMessages(FileDescriptorSet fds) {
+        List<DescriptorProtos.DescriptorProto> result = new ArrayList<>();
+
+        for (DescriptorProtos.FileDescriptorProto file : fds.getFileList()) {
+            // Add top-level messages
+            for (DescriptorProtos.DescriptorProto msg : file.getMessageTypeList()) {
+                collectMessagesRecursively(msg, result, "");
+            }
+        }
+        return result;
+    }
+
+    static void collectMessagesRecursively(DescriptorProtos.DescriptorProto message,
+            List<DescriptorProtos.DescriptorProto> output, String parentPrefix) {
+        output.add(message);
+        // Collect nested messages with their parent prefix
+        for (DescriptorProtos.DescriptorProto nested : message.getNestedTypeList()) {
+            collectMessagesRecursively(nested, output, message.getName() + ".");
+        }
+    }
+
     private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName)
             throws ConnectorGenException {
         VelocityContext context = new VelocityContext();
         initVelocityEngine();
+        List<DescriptorProtos.DescriptorProto> allMessages = getAllMessages(descriptorSet);
+        context.put(ALL_MESSAGES, allMessages);
         // Iterate through each proto file
         for (com.google.protobuf.DescriptorProtos.FileDescriptorProto fileProto : descriptorSet.getFileList()) {
             String name = fileProto.getName();

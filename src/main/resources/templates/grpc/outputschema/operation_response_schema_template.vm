@@ -1,10 +1,11 @@
+## Proto type → JSON Schema type mapping
 #set($protoToJsonMap = {
   "TYPE_DOUBLE": "number",
   "TYPE_FLOAT": "number",
   "TYPE_INT64": "string",
   "TYPE_UINT64": "string",
-  "TYPE_FIXED64": "string",
-  "TYPE_SFIXED64": "string",
+  "TYPE_FIXED64": "number",
+  "TYPE_SFIXED64": "number",
   "TYPE_SINT64": "string",
   "TYPE_INT32": "number",
   "TYPE_UINT32": "number",
@@ -16,55 +17,134 @@
   "TYPE_STRING": "string",
   "TYPE_BYTES": "string",
   "TYPE_MESSAGE": "object"
-})
-#macro(getJsonType $protoType)#if($protoToJsonMap.containsKey($protoType))$!protoToJsonMap.get($protoType).trim()#else$!{"unknown"}#end#end
+})##
+## =====================================================================
+## Helper: proto type → JSON Schema type
+## =====================================================================
+#macro(jsonType $protoType)##
+  #if($protoToJsonMap.containsKey($protoType))##
+    "$protoToJsonMap.get($protoType)"##
+  #else##
+    "string"##
+  #end##
+#end##
+
+## =====================================================================
+## Helper: find DescriptorProto in allMessages using suffix match
+## =====================================================================
+#macro(findMsgByRawType $rawName $msgDesc)##
+  #set($msgDesc = false)##
+  #if($allMessages && $rawName && $rawName != "")##
+    #foreach($m in $allMessages)##
+      #set($candidateName = $m.getName())##
+      #if($rawName.endsWith($candidateName))##
+        #set($msgDesc = $m)##
+        #break##
+      #end##
+    #end##
+  #end##
+#end##
+
+## =====================================================================
+## Core: recursively render JSON fields
+## =====================================================================
+#macro(renderFields $fields)##
+  #foreach($field in $fields)##
+    #set($fieldName  = $field.getName())##
+    #set($fieldType  = $field.getType().toString())##
+    #set($fieldLabel = $field.getLabel().toString())##
+
+    ## MESSAGE TYPE ====================================================
+    #if($fieldType == "TYPE_MESSAGE")##
+      #set($rawName = "$!field.getTypeName()")##
+      #if(!$rawName || $rawName == "")##
+        #set($rawName = "$!field.typeName")##
+      #end##
+
+      #set($msgDesc = false)##
+      #findMsgByRawType($rawName $msgDesc)##
+
+      #set($msgName = "")##
+      #if($msgDesc && $msgDesc.getName())##
+        #set($msgName = $msgDesc.getName())##
+      #else##
+        #set($msgName = $rawName)##
+        #if($msgName && $msgName != "")##
+          #set($idx = $msgName.lastIndexOf("."))##
+          #if($idx >= 0)##
+            #set($msgName = $msgName.substring($idx + 1))##
+          #end##
+        #end##
+      #end##
+
+      #set($nested = false)##
+      #if($msgDesc && $msgDesc.getFieldList())##
+        #set($nested = $msgDesc.getFieldList())##
+      #end##
+
+      ## RENDER MESSAGE FIELD ==========================================
+      #if($fieldLabel == "LABEL_REPEATED")##
+"$fieldName": { "type": "array", "items": {
+  "type": "object", "description": "Nested message of type $msgName"##
+  #if($nested)##
+  , "properties": { #renderFields($nested) }##
+  #else##
+  , "additionalProperties": true##
+  #end##
+} }##
+      #else##
+"$fieldName": { "type": "object", "description": "Nested message of type $msgName"##
+  #if($nested)##
+  , "properties": { #renderFields($nested) }##
+  #else##
+  , "additionalProperties": true##
+  #end##
+}##
+      #end##
+
+    ## SCALAR / ENUM ===================================================
+    #else##
+      #set($jsType = "#jsonType($fieldType)")##
+      #if($fieldLabel == "LABEL_REPEATED")##
+"$fieldName": { "type": "array", "items": { "type": $jsType } }##
+      #else##
+"$fieldName": { "type": $jsType }##
+      #end##
+    #end##
+
+    #if($foreach.hasNext),#end##
+  #end##
+#end##
+
+## =====================================================================
+## ROOT JSON SCHEMA
+## =====================================================================
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "title": "$connectorName $rpcCall.getRpcCallName() Operation Response Schema",
-    "description": "Schema representing the output of the $rpcCall.getRpcCallName() operation in $connectorName",
-    "properties": {
-       #if ($rpcCall.getOutput() != "")
-        "payload": {
-            "type": "object",
-            "description": "Payload of the API response.",
-            "additionalProperties": true,
-            "properties": {
-                #set($parameterList = $rpcCall.getOutput())
-                #foreach ($param in $parameterList)
-                "$param.getName()": {
-                    "type": "#getJsonType($param.getType().toString())"
-                }#if($foreach.hasNext),#end
-                #end
-            }
-        },
-      #else
-        "payload": {
-            "type": "object",
-            "description": "Payload of the API response.",
-            "additionalProperties": true
-        },
-      #end
-      "attributes": {
-        "type": "object",
-        "description": "Metadata about the operation.",
-        "properties": {
-          "statusCode": {
-            "type": "integer",
-            "description": "HTTP status code of the API response.",
-            "minimum": 100,
-            "maximum": 599
-          }
-        },
-        "required": ["statusCode"],
-        "additionalProperties": false
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "$connectorName $rpcCall.getRpcCallName() Operation Response Schema",
+  "description": "Schema representing the output of the $rpcCall.getRpcCallName() operation in $connectorName",
+  "_debug": { "allMessages_size": "#if($allMessages)$allMessages.size()#{else}0#end" },
+  "properties": {
+    "payload": {
+      "type": "object",
+      "description": "Payload of the API response.",
+      "properties": {
+        #set($params = $rpcCall.getOutput())##
+        #renderFields($params)
       },
-      "headers": {
-        "type": "object",
-        "description": "HTTP headers of the API response.",
-        "additionalProperties": false
-      }
+      "additionalProperties": true
     },
-    "required": ["payload", "attributes", "headers"],
-    "additionalProperties": false
-  }
+    "attributes": {
+      "type": "object",
+      "description": "Metadata about the operation.",
+      "properties": {
+        "statusCode": { "type": "integer", "minimum": 100, "maximum": 599 }
+      },
+      "required": ["statusCode"],
+      "additionalProperties": false
+    },
+    "headers": { "type": "object", "additionalProperties": false }
+  },
+  "required": ["payload", "attributes", "headers"]
+}

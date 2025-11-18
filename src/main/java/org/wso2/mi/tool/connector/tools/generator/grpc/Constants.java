@@ -45,5 +45,6 @@ public class Constants {
     public static final String JAVA_GRPC_STUB_FILE    = "javaGrpcStubFile";
     public static final String IS_JAVA_GRPC_STUB_FILE = "isJavaGrpcStubFile";
     public static final String PROTO_FILE_NAME = "protoFileName";
+    public static final String ALL_MESSAGES =  "allMessages";
 
 }
