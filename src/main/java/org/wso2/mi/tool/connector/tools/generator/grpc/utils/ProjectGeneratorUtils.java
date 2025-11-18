@@ -25,6 +25,8 @@ import org.apache.velocity.app.VelocityEngine;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -55,15 +57,10 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PACKAGE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.ErrorMessages.GRPC_CONNECTOR_103;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.capitalizeFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.deleteDirectory;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getGetterNames;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getSetterNames;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.lowercaseFirstLetter;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.HAS_RESPONSE_MODEL;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.INPUT_FIELD_METHODS;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.METHODS_WITH_ARRAY;
-import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.OUTPUT_FIELD_METHODS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_COMPILE_DIRECTORY;
 
@@ -74,7 +71,6 @@ public class ProjectGeneratorUtils {
 
     private static final Log LOG = LogFactory.getLog(ProjectGeneratorUtils.class);
     private static final List<RPCService.RPCCall> operationList = new ArrayList<>();
-    private static URLClassLoader classLoader;
 
     public static String generateConnectorProject(CodeGeneratorMetaData metadata, VelocityEngine engine,
                                                 VelocityContext context, String tempJavaPath,
@@ -125,8 +121,6 @@ public class ProjectGeneratorUtils {
                     }
                 }
             }
-
-            classLoader = URLClassLoader.newInstance(new URL[]{tempDir.toFile().toURI().toURL()});
             try {
                 generateRPCfunctions(pathToMainDir, pathToResourcesDir, engine, context);
             } catch (IOException e) {
@@ -145,75 +139,6 @@ public class ProjectGeneratorUtils {
             LOG.error(e.getMessage());
             return null;
         }
-    }
-
-    private static void generateJavaMediators(VelocityContext context) {
-        RPCService.RPCCall rpcCall = (RPCService.RPCCall) context.get("rpcCall");
-        //output and input message
-        String packageName = getProjectJavaPackage(context);
-        String outputName = rpcCall.getOutputName();
-        String outputFileName;
-        if (!(Boolean) context.get("isJavaMultipleFiles")) {
-            outputFileName = packageName + "." + context.get("javaGrpcStubFile") + "$" +
-                    capitalizeFirstLetter(outputName);
-        } else {
-            outputFileName = packageName + "." + capitalizeFirstLetter(outputName);
-        }
-
-        String inputName = rpcCall.getInputName() + "$Builder";
-        String inputFileName;
-        if (!(Boolean) context.get("isJavaMultipleFiles")) {
-            inputFileName = packageName + "." + context.get("javaGrpcStubFile") + "$" +
-                    capitalizeFirstLetter(inputName);
-        } else {
-            inputFileName = packageName + "." + capitalizeFirstLetter(inputName);
-        }
-
-        Class<?> outputClass;
-        Class<?> inputClass;
-        try {
-            outputClass = Class.forName(outputFileName, true, classLoader);
-            inputClass = Class.forName(inputFileName, true, classLoader);
-        } catch (ClassNotFoundException e) {
-            LOG.error("Invalid class path: " + inputFileName);
-            return;
-        }
-        Set<String> outputs = rpcCall.getOutput().keySet();
-        Map<String, String> outputMethods = new HashMap<>();
-        Method[] methods = outputClass.getMethods();
-        Map<String, Method> methodMap = Arrays.stream(methods)
-                .collect(Collectors.toMap(Method::getName, Function.identity(), (m1, m2) -> m1));
-        for (String fieldName : outputs) {
-            String expectedGetterName = getGetterNames(rpcCall.getOutput().get(fieldName));
-            if (methodMap.containsKey(expectedGetterName)) {
-                outputMethods.put(fieldName, expectedGetterName);
-            }
-        }
-        Set<String> inputs = rpcCall.getInput().keySet();
-        Map<String, String> inputMethods = new HashMap<>();
-        Method[] inmethods = inputClass.getDeclaredMethods();
-        Map<String, Method> inputMethodMap = Arrays.stream(inmethods)
-                .collect(Collectors.toMap(Method::getName, Function.identity(), (m1, m2) -> m1));
-
-        for (String fieldName : inputs) {
-            String expectedGetterName = getSetterNames(rpcCall.getInput().get(fieldName));
-            if(expectedGetterName.startsWith("addAll")) {
-                if (context.containsKey(METHODS_WITH_ARRAY)) {
-                    Set<String> methodsSet = (Set<String>) context.get(METHODS_WITH_ARRAY);
-                    methodsSet.add(rpcCall.getRpcCallName());
-                    context.put(METHODS_WITH_ARRAY, methodsSet);
-                } else {
-                    Set<String> methodsWithArray = new HashSet<>();
-                    methodsWithArray.add(rpcCall.getRpcCallName());
-                    context.put(METHODS_WITH_ARRAY, methodsWithArray);
-                }
-            }
-            if (inputMethodMap.containsKey(expectedGetterName)) {
-                inputMethods.put(fieldName, expectedGetterName);
-            }
-        }
-        context.put(OUTPUT_FIELD_METHODS, outputMethods);
-        context.put(INPUT_FIELD_METHODS, inputMethods);
     }
 
     private static String getProjectJavaPackage(VelocityContext context) {
@@ -239,8 +164,7 @@ public class ProjectGeneratorUtils {
 
     private static void createConnectorDirectory(String pathToConnectorDir, String pathToMainDir,
                                                  String pathToResourcesDir, String tempJavaPath,
-                                                 VelocityContext context)
-            throws IOException {
+                                                 VelocityContext context) throws IOException {
 
         Files.createDirectories(Paths.get(pathToConnectorDir));
         Files.createDirectories(Paths.get(pathToMainDir));
@@ -406,7 +330,6 @@ public class ProjectGeneratorUtils {
         operationName = lowercaseFirstLetter(operationName);
         String synapseFileName = pathToResourcesDir + "/functions/" + operationName + ".xml";
         String uischemaFileName = pathToResourcesDir + "/uischema/" + operationName + ".json";
-        generateJavaMediators(context);
 
         String outputFile = pathToMain + "/GRPCChannelBuilder.java";
         String template = "templates/grpc/java/grpc_channel_builder.vm";
