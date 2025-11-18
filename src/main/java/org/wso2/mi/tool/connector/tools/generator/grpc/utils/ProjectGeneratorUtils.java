@@ -25,16 +25,12 @@ import org.apache.velocity.app.VelocityEngine;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 
-import javax.tools.JavaCompiler;
-import javax.tools.ToolProvider;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Writer;
-import java.lang.reflect.Method;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,14 +38,9 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.JAVA_PACKAGE;
@@ -112,7 +103,7 @@ public class ProjectGeneratorUtils {
             // Iterate and print
             for (AbstractMap.SimpleEntry<String, String> file : javaFiles) {
                 String fileName = file.getValue();
-                if (fileName.endsWith("Grpc.java")) {
+                if (fileName.endsWith("Grpc.java") && fileName.contains(context.get("serviceName").toString())) {
                     context.put("javaGrpcServerFile", fileName.replace(".java", ""));
                     context.put("javaGrpcServerFilePath", file.getKey());
                 } else {

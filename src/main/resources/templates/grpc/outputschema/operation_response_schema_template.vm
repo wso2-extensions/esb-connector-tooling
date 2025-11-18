@@ -30,17 +30,24 @@
 #end##
 
 ## =====================================================================
-## Helper: find DescriptorProto in allMessages using suffix match
+## Helper: find DescriptorProto in $allMessages MAP by full type name
+##   - $allMessages is Map<String, DescriptorProto>
+##   - key is fully-qualified name without leading dot, e.g. "example.common.User"
+##   - $rawName is usually ".example.common.User"
 ## =====================================================================
 #macro(findMsgByRawType $rawName $msgDesc)##
   #set($msgDesc = false)##
   #if($allMessages && $rawName && $rawName != "")##
-    #foreach($m in $allMessages)##
-      #set($candidateName = $m.getName())##
-      #if($rawName.endsWith($candidateName))##
-        #set($msgDesc = $m)##
-        #break##
-      #end##
+    ## Normalize: strip leading dot if present
+    #set($norm = $rawName)##
+    #if($norm.startsWith("."))##
+      #set($norm = $norm.substring(1))##
+    #end##
+
+    ## Direct lookup in the map
+    #set($candidate = $allMessages.get($norm))##
+    #if($candidate)##
+      #set($msgDesc = $candidate)##
     #end##
   #end##
 #end##
@@ -64,6 +71,7 @@
       #set($msgDesc = false)##
       #findMsgByRawType($rawName $msgDesc)##
 
+      ## Derive a display name for description
       #set($msgName = "")##
       #if($msgDesc && $msgDesc.getName())##
         #set($msgName = $msgDesc.getName())##
@@ -77,6 +85,7 @@
         #end##
       #end##
 
+      ## Nested fields (if message descriptor found)
       #set($nested = false)##
       #if($msgDesc && $msgDesc.getFieldList())##
         #set($nested = $msgDesc.getFieldList())##
