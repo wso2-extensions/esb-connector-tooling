@@ -288,7 +288,7 @@ public class CodeGenerationUtils {
         // bottom-up
         collectNesting(msg, nesting);
         Collections.reverse(nesting);
-        String simple = String.join(".", nesting.isEmpty() ? List.of(msg.getName()) : nesting);
+        String simple = String.join(".", nesting.isEmpty() ? Collections.singletonList(msg.getName()) : nesting);
         String pkgPrefix = pkg.isEmpty() ? "" : (pkg + ".");
         return multi ? (pkgPrefix + simple) : (pkgPrefix + outer + "." + simple);
     }
