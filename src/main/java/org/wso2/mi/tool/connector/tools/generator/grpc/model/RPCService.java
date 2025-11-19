@@ -92,7 +92,6 @@ public class RPCService {
             private Map<String, DescriptorProtos.FieldDescriptorProto> output = new HashMap<>();
 
             private String comment = "";
-
             public RPCCallBuilder rpcCallName(String rpcCallName) {
                 this.rpcCallName = rpcCallName;
                 return this;

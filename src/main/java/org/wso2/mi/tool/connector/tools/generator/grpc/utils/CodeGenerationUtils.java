@@ -25,8 +25,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -34,6 +39,63 @@ import java.util.regex.Pattern;
  * Utils for the code generations.
  */
 public class CodeGenerationUtils {
+
+    // Java reserved keywords
+    public static final Set<String> JAVA_KEYWORDS;
+
+    static {
+        JAVA_KEYWORDS = new HashSet<>();
+        JAVA_KEYWORDS.add("abstract");
+        JAVA_KEYWORDS.add("assert");
+        JAVA_KEYWORDS.add("boolean");
+        JAVA_KEYWORDS.add("break");
+        JAVA_KEYWORDS.add("byte");
+        JAVA_KEYWORDS.add("case");
+        JAVA_KEYWORDS.add("catch");
+        JAVA_KEYWORDS.add("char");
+        JAVA_KEYWORDS.add("class");
+        JAVA_KEYWORDS.add("const");
+        JAVA_KEYWORDS.add("continue");
+        JAVA_KEYWORDS.add("default");
+        JAVA_KEYWORDS.add("do");
+        JAVA_KEYWORDS.add("double");
+        JAVA_KEYWORDS.add("else");
+        JAVA_KEYWORDS.add("enum");
+        JAVA_KEYWORDS.add("extends");
+        JAVA_KEYWORDS.add("final");
+        JAVA_KEYWORDS.add("finally");
+        JAVA_KEYWORDS.add("float");
+        JAVA_KEYWORDS.add("for");
+        JAVA_KEYWORDS.add("goto");
+        JAVA_KEYWORDS.add("if");
+        JAVA_KEYWORDS.add("implements");
+        JAVA_KEYWORDS.add("import");
+        JAVA_KEYWORDS.add("instanceof");
+        JAVA_KEYWORDS.add("int");
+        JAVA_KEYWORDS.add("interface");
+        JAVA_KEYWORDS.add("long");
+        JAVA_KEYWORDS.add("native");
+        JAVA_KEYWORDS.add("new");
+        JAVA_KEYWORDS.add("package");
+        JAVA_KEYWORDS.add("private");
+        JAVA_KEYWORDS.add("protected");
+        JAVA_KEYWORDS.add("public");
+        JAVA_KEYWORDS.add("return");
+        JAVA_KEYWORDS.add("short");
+        JAVA_KEYWORDS.add("static");
+        JAVA_KEYWORDS.add("strictfp");
+        JAVA_KEYWORDS.add("super");
+        JAVA_KEYWORDS.add("switch");
+        JAVA_KEYWORDS.add("synchronized");
+        JAVA_KEYWORDS.add("this");
+        JAVA_KEYWORDS.add("throw");
+        JAVA_KEYWORDS.add("throws");
+        JAVA_KEYWORDS.add("transient");
+        JAVA_KEYWORDS.add("try");
+        JAVA_KEYWORDS.add("void");
+        JAVA_KEYWORDS.add("volatile");
+        JAVA_KEYWORDS.add("while");
+    }
 
     public static String capitalizeFirstLetter(String str) {
         if (str == null || str.isEmpty()) {
@@ -127,67 +189,11 @@ public class CodeGenerationUtils {
         }
         return result.toString();
     }
+
     private static boolean isMapField(DescriptorProtos.FieldDescriptorProto field) {
         return field.getType() == DescriptorProtos.FieldDescriptorProto.Type.TYPE_MESSAGE &&
                 field.getLabel() == DescriptorProtos.FieldDescriptorProto.Label.LABEL_REPEATED &&
                 field.getTypeName().endsWith("Entry");
-    }
-
-    // Java reserved keywords
-    public static final Set<String> JAVA_KEYWORDS;
-
-    static {
-        JAVA_KEYWORDS = new HashSet<>();
-        JAVA_KEYWORDS.add("abstract");
-        JAVA_KEYWORDS.add("assert");
-        JAVA_KEYWORDS.add("boolean");
-        JAVA_KEYWORDS.add("break");
-        JAVA_KEYWORDS.add("byte");
-        JAVA_KEYWORDS.add("case");
-        JAVA_KEYWORDS.add("catch");
-        JAVA_KEYWORDS.add("char");
-        JAVA_KEYWORDS.add("class");
-        JAVA_KEYWORDS.add("const");
-        JAVA_KEYWORDS.add("continue");
-        JAVA_KEYWORDS.add("default");
-        JAVA_KEYWORDS.add("do");
-        JAVA_KEYWORDS.add("double");
-        JAVA_KEYWORDS.add("else");
-        JAVA_KEYWORDS.add("enum");
-        JAVA_KEYWORDS.add("extends");
-        JAVA_KEYWORDS.add("final");
-        JAVA_KEYWORDS.add("finally");
-        JAVA_KEYWORDS.add("float");
-        JAVA_KEYWORDS.add("for");
-        JAVA_KEYWORDS.add("goto");
-        JAVA_KEYWORDS.add("if");
-        JAVA_KEYWORDS.add("implements");
-        JAVA_KEYWORDS.add("import");
-        JAVA_KEYWORDS.add("instanceof");
-        JAVA_KEYWORDS.add("int");
-        JAVA_KEYWORDS.add("interface");
-        JAVA_KEYWORDS.add("long");
-        JAVA_KEYWORDS.add("native");
-        JAVA_KEYWORDS.add("new");
-        JAVA_KEYWORDS.add("package");
-        JAVA_KEYWORDS.add("private");
-        JAVA_KEYWORDS.add("protected");
-        JAVA_KEYWORDS.add("public");
-        JAVA_KEYWORDS.add("return");
-        JAVA_KEYWORDS.add("short");
-        JAVA_KEYWORDS.add("static");
-        JAVA_KEYWORDS.add("strictfp");
-        JAVA_KEYWORDS.add("super");
-        JAVA_KEYWORDS.add("switch");
-        JAVA_KEYWORDS.add("synchronized");
-        JAVA_KEYWORDS.add("this");
-        JAVA_KEYWORDS.add("throw");
-        JAVA_KEYWORDS.add("throws");
-        JAVA_KEYWORDS.add("transient");
-        JAVA_KEYWORDS.add("try");
-        JAVA_KEYWORDS.add("void");
-        JAVA_KEYWORDS.add("volatile");
-        JAVA_KEYWORDS.add("while");
     }
 
     /**
@@ -227,6 +233,92 @@ public class CodeGenerationUtils {
                             "'. Must be a valid Java package identifier (no reserved keywords, " +
                             "segments must start with letter/underscore, no empty parts)."
             );
+        }
+    }
+
+    public static String resolveJavaFqn(Map<String, FileAndMsg> idx, String protoFqn) throws ConnectorGenException {
+        FileAndMsg fam = idx.get(protoFqn);
+        if (fam == null) throw new ConnectorGenException("Unknown type: " + protoFqn);
+        return messageJavaFqn(fam.file, fam.msg);
+    }
+
+    public static Map<String, FileAndMsg> buildTypeIndex(DescriptorProtos.FileDescriptorSet set) {
+        Map<String, FileAndMsg> map = new HashMap<>();
+        for (DescriptorProtos.FileDescriptorProto file : set.getFileList()) {
+            String pkg = file.hasPackage() ? file.getPackage() : "";
+            // top-level messages
+            for (DescriptorProtos.DescriptorProto msg : file.getMessageTypeList()) {
+                addAllNested(map, file, pkg, "", msg);
+            }
+        }
+        return map;
+    }
+
+    // Recursively index nested messages too: ".pkg.Outer.Inner"
+    private static void addAllNested(Map<String, FileAndMsg> map, DescriptorProtos.FileDescriptorProto file,
+                                     String pkg, String prefix, DescriptorProtos.DescriptorProto msg) {
+        String fullName = "." + (pkg.isEmpty() ? "" : (pkg + ".")) + (prefix.isEmpty() ? "" : (prefix + ".")) + msg.getName();
+        map.put(fullName, new FileAndMsg(file, msg));
+
+        for (DescriptorProtos.DescriptorProto nested : msg.getNestedTypeList()) {
+            addAllNested(map, file, pkg, (prefix.isEmpty() ? msg.getName() : prefix + "." + msg.getName()), nested);
+        }
+    }
+
+    // Build Java FQN for a message using file options
+    static String messageJavaFqn(DescriptorProtos.FileDescriptorProto file, DescriptorProtos.DescriptorProto msg) {
+        String pkg = file.getOptions().hasJavaPackage()
+                ? file.getOptions().getJavaPackage()
+                : (file.hasPackage() ? file.getPackage() : "");
+
+        boolean multi = file.getOptions().getJavaMultipleFiles();
+        String outer = null;
+        if (!multi) {
+            if (file.getOptions().hasJavaOuterClassname()) {
+                outer = file.getOptions().getJavaOuterClassname();
+            } else {
+                String base = file.getName().substring(file.getName().lastIndexOf('/') + 1)
+                        .replace(".proto", "");
+                outer = toOuterClass(base);
+            }
+        }
+
+        // Reconstruct nesting chain for Java (same names as proto nesting)
+        List<String> nesting = new ArrayList<>();
+        // bottom-up
+        collectNesting(msg, nesting);
+        Collections.reverse(nesting);
+        String simple = String.join(".", nesting.isEmpty() ? List.of(msg.getName()) : nesting);
+        String pkgPrefix = pkg.isEmpty() ? "" : (pkg + ".");
+        return multi ? (pkgPrefix + simple) : (pkgPrefix + outer + "." + simple);
+    }
+
+    // Collect full nesting name for a message (handles nested messages)
+    private static void collectNesting(DescriptorProtos.DescriptorProto msg, List<String> out) {
+        // DescriptorProto doesn’t carry parents; for Java FQN we only need simple name here.
+        // Nested names are accounted for by addAllNested() when indexing; here simple is enough.
+        out.add(msg.getName());
+    }
+
+    // "common" -> "Common", "my_service" -> "MyService"
+    private static String toOuterClass(String base) {
+        String cleaned = base.replaceAll("[^A-Za-z0-9]", " ");
+        StringBuilder sb = new StringBuilder();
+        for (String part : cleaned.split("\\s+")) {
+            if (part.isEmpty()) continue;
+            sb.append(Character.toUpperCase(part.charAt(0)));
+            if (part.length() > 1) sb.append(part.substring(1));
+        }
+        return sb.toString();
+    }
+
+    public static final class FileAndMsg {
+        final DescriptorProtos.FileDescriptorProto file;
+        final DescriptorProtos.DescriptorProto msg;
+
+        FileAndMsg(DescriptorProtos.FileDescriptorProto file, DescriptorProtos.DescriptorProto msg) {
+            this.file = file;
+            this.msg = msg;
         }
     }
 }

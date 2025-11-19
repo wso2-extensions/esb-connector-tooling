@@ -36,8 +36,6 @@ package org.wso2.carbon.${connectorName}connector;
 #if($isJavaMultipleFiles && $pkgPrefix && $pkgPrefix != "")
 import ${pkgPrefix}${javaGrpcStubFile};
 import ${pkgPrefix}${javaGrpcServerFile};
-import ${pkgPrefix}${rpcCall.getInputName()};
-import ${pkgPrefix}${rpcCall.getOutputName()};
 #else
 #if($pkgPrefix && $pkgPrefix != "")
 import ${pkgPrefix}${javaGrpcStubFile};
@@ -249,11 +247,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
              #set($void = $setters.add("." + $methodName + " " + $argument))
            #end
 
-           #if($isJavaMultipleFiles)
-              ${rpcCall.getInputName()} request = null;
-           #else
-              ${javaGrpcStubFile}.${rpcCall.getInputName()} request = null;
-           #end
+           ${rpcCall.getInputName()} request = null;
 
            if (jsonPayload != null) {
               jsonPayload = InlineExpressionUtil.processInLineSynapseExpressionTemplate(context, jsonPayload);
@@ -263,7 +257,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
                   JsonFormat.parser().ignoringUnknownFields().merge(jsonPayload, builder);
                   request = builder.build();
               #else
-                  ${javaGrpcStubFile}.${rpcCall.getInputName()}.Builder builder = ${javaGrpcStubFile}.${rpcCall.getInputName()}.newBuilder();
+                  ${rpcCall.getInputName()}.Builder builder = ${rpcCall.getInputName()}.newBuilder();
                   JsonFormat.parser().ignoringUnknownFields().merge(jsonPayload, builder);
                   request = builder.build();
               #end
@@ -275,11 +269,7 @@ public class ${capitalizedKey}Mediator extends AbstractConnectorOperation {
                (${pkgPrefix}${javaGrpcServerFile}.${serviceName}BlockingStub) context.getProperty("stub");
 
            #set($methodName = $rpcName.substring(0,1).toLowerCase() + $rpcName.substring(1))
-           #if($isJavaMultipleFiles)
-               $rpcCall.getOutputName() response = stub.${methodName}(request);
-           #else
-               ${javaGrpcStubFile}.$rpcCall.getOutputName() response = stub.${methodName}(request);
-           #end
+           $rpcCall.getOutputName() response = stub.${methodName}(request);
 
            String jsonOutput = JsonFormat.printer().preservingProtoFieldNames().print(response);
            handleConnectorResponse(context, responseVariable, overwriteBody, jsonOutput, null, null);

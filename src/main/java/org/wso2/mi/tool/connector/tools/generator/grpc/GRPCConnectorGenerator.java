@@ -20,6 +20,7 @@ package org.wso2.mi.tool.connector.tools.generator.grpc;
 
 import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import com.google.protobuf.ProtocolStringList;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
@@ -28,17 +29,22 @@ import org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenExc
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.CodeGeneratorMetaData;
 import org.wso2.mi.tool.connector.tools.generator.grpc.model.RPCService;
 import org.wso2.mi.tool.connector.tools.generator.common.utils.ConnectorBuilderUtils;
+import org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Collectors;
+import java.util.Set;
 
+import static com.google.protobuf.DescriptorProtos.*;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ALL_MESSAGES;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.ARTIFACTS;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.CONNECTOR_VERSION;
@@ -51,9 +57,11 @@ import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PACKAGE;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.PROTO_FILE_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE_NAME;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.TEMP_JAVA_DIRECTORY;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.buildTypeIndex;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.getTypeName;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.loadDescriptorSet;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.Constants.SERVICE;
+import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.resolveJavaFqn;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.CodeGenerationUtils.validateOrThrow;
 import static org.wso2.mi.tool.connector.tools.generator.grpc.utils.ProjectGeneratorUtils.generateConnectorProject;
 
@@ -64,6 +72,7 @@ public class GRPCConnectorGenerator {
     private static final Log LOG = LogFactory.getLog(GRPCConnectorGenerator.class);
 
     private static final VelocityEngine velocityEngine = new VelocityEngine();
+    private static Map<String, CodeGenerationUtils.FileAndMsg> typeIndex = null;
 
     /**
      * Generates the connector using the OpenAPI spec.
@@ -93,13 +102,44 @@ public class GRPCConnectorGenerator {
                     grpcPluginPath.toFile(),
                     protoSourceDir,
                     protoFileName,
-                    tempOutputDir
+                    tempOutputDir,
+                    null
             );
             LOG.info("Protoc execution " + (success ? "succeeded" : "failed"));
             if (!success) {
                 return null;
             }
             FileDescriptorSet fileDescriptorSet = loadDescriptorSet(tempOutputDir + "/Descriptor.desc");
+            // Handle proto dependencies
+            Set<String> processed = new HashSet<>();
+
+            for (FileDescriptorProto fileDescriptorProto : fileDescriptorSet.getFileList()) {
+                String fileName = fileDescriptorProto.getName();
+                // Skip standard well-known types
+                if (fileName.startsWith("google/protobuf/")) {
+                    continue;
+                }
+                // Avoid processing the same file more than once
+                if (!processed.add(fileName)) {
+                    // already processed
+                    continue;
+                }
+                ProtocolStringList dependencyList = fileDescriptorProto.getDependencyList();
+                boolean success1 = ProtocExecutor.runProtoc(
+                        protocPath.toFile(),
+                        grpcPluginPath.toFile(),
+                        protoSourceDir,
+                        fileName,
+                        tempOutputDir,
+                        dependencyList
+                );
+
+                if (!success1) {
+                    LOG.error(ErrorMessages.GRPC_CONNECTOR_104.getDescription());
+                    return null;
+                }
+            }
+            typeIndex = buildTypeIndex(fileDescriptorSet);
             VelocityContext velocityForProtoFile = createVelocityForProtoFile(fileDescriptorSet, protoFileName);
             CodeGeneratorMetaData metaData = new CodeGeneratorMetaData.Builder()
                     .withMIVersion(miVersion)
@@ -118,17 +158,72 @@ public class GRPCConnectorGenerator {
         return connectorPath;
     }
 
+    static Map<String, DescriptorProto> getAllMessages(FileDescriptorSet fds) {
+        Map<String, DescriptorProto> result = new HashMap<>();
+
+        for (FileDescriptorProto file : fds.getFileList()) {
+            String pkg = file.hasPackage() ? file.getPackage() : "";
+
+            // Top-level messages
+            for (DescriptorProto msg : file.getMessageTypeList()) {
+                collectMessagesRecursively(pkg, "", msg, result);
+            }
+        }
+        return result;
+    }
+
+    private static void collectMessagesRecursively(
+            String pkg,
+            String parent,
+            DescriptorProto message,
+            Map<String, DescriptorProto> output) {
+
+        // Build fully-qualified name
+        StringBuilder sb = new StringBuilder();
+        if (!pkg.isEmpty()) {
+            sb.append(pkg);
+        }
+        if (!parent.isEmpty()) {
+            if (sb.length() > 0) sb.append('.');
+            sb.append(parent);
+        }
+        if (sb.length() > 0) sb.append('.');
+        sb.append(message.getName());
+
+        // e.g. "example.service.Outer.Inner"
+        String fullName = sb.toString();
+        output.put(fullName, message);
+
+        // Build new parent path for nested types
+        String newParent = parent.isEmpty()
+                ? message.getName()
+                : parent + "." + message.getName();
+
+        // Recurse nested messages
+        for (DescriptorProto nested : message.getNestedTypeList()) {
+            collectMessagesRecursively(pkg, newParent, nested, output);
+        }
+    }
+
+
     private static VelocityContext createVelocityForProtoFile(FileDescriptorSet descriptorSet, String protoFileName)
             throws ConnectorGenException {
         VelocityContext context = new VelocityContext();
         initVelocityEngine();
+        Map<String, DescriptorProto> allMessages = getAllMessages(descriptorSet);
+        context.put(ALL_MESSAGES, allMessages);
         // Iterate through each proto file
-        for (com.google.protobuf.DescriptorProtos.FileDescriptorProto fileProto : descriptorSet.getFileList()) {
+        for (FileDescriptorProto fileProto : descriptorSet.getFileList()) {
             String name = fileProto.getName();
+            if (!name.equals(protoFileName)) {
+                continue;
+            }
+            context.put(PROTO_FILE_NAME, name);
             String javaOuterClassname = fileProto.getOptions().getJavaOuterClassname();
             boolean javaMultipleFiles = fileProto.getOptions().getJavaMultipleFiles();
-            String javaPackage = fileProto.getOptions().getJavaPackage();
-            if (!javaPackage.isEmpty()) {
+
+            if (fileProto.getOptions().hasJavaPackage()) {
+                String javaPackage = fileProto.getOptions().getJavaPackage();
                 validateOrThrow(javaPackage);
                 context.put(JAVA_PACKAGE, javaPackage);
             }
@@ -139,32 +234,25 @@ public class GRPCConnectorGenerator {
             } else {
                 context.put(IS_JAVA_GRPC_STUB_FILE, false);
             }
-
-            if (!name.equals(protoFileName)) {
-                continue;
-            }
-            context.put(PROTO_FILE_NAME, name);
             String aPackage = fileProto.getPackage();
             context.put(PACKAGE, aPackage);
-            Map<String, DescriptorProtos.DescriptorProto> messageTypeMap =
-                    fileProto.getMessageTypeList().stream()
-                            .collect(Collectors.toMap(
-                                    DescriptorProtos.DescriptorProto::getName,
-                                    descriptorProto -> descriptorProto));
 
-            List<DescriptorProtos.ServiceDescriptorProto> serviceList = fileProto.getServiceList();
-            for (DescriptorProtos.ServiceDescriptorProto service : serviceList) {
+            List<ServiceDescriptorProto> serviceList = fileProto.getServiceList();
+            if (serviceList.isEmpty()) {
+                throw new ConnectorGenException("Given proto has no services to generate a connector.");
+            }
+            for (ServiceDescriptorProto service : serviceList) {
                 String serviceName = service.getName();
                 String resolvedConnectorName = serviceName.toLowerCase().replace(" ", "");
                 updateConnectorMetaInfo(context, serviceName, resolvedConnectorName);
 
-                List<DescriptorProtos.MethodDescriptorProto> methodList = service.getMethodList();
+                List<MethodDescriptorProto> methodList = service.getMethodList();
                 Map<String, RPCService.RPCCall> rcpMap = new HashMap<>();
-                for (DescriptorProtos.MethodDescriptorProto method : methodList) {
+                for (MethodDescriptorProto method : methodList) {
                     if (method.getServerStreaming() || method.getClientStreaming()) {
                         LOG.warn(ErrorMessages.GRPC_CONNECTOR_102.format(method.getName()));
                     } else {
-                        populateRPCcall(fileProto, messageTypeMap, rcpMap, method);
+                        populateRPCcall(allMessages, rcpMap, method);
                     }
                 }
                 RPCService rpcService = new RPCService.Builder()
@@ -178,27 +266,37 @@ public class GRPCConnectorGenerator {
         return context;
     }
 
-    private static void populateRPCcall(DescriptorProtos.FileDescriptorProto fileProto,
-                                        Map<String, DescriptorProtos.DescriptorProto> messageTypeMap,
+    private static void populateRPCcall(Map<String, DescriptorProto> allMessages,
                                         Map<String, RPCService.RPCCall> rcpMap,
-                                        DescriptorProtos.MethodDescriptorProto method) {
+                                        MethodDescriptorProto method) throws ConnectorGenException {
         String methodName = method.getName();
         String inputType = method.getInputType();
-        String packageName = fileProto.getPackage();
-        String inputTypeName = getTypeName(inputType, packageName);
-        Map<String, DescriptorProtos.FieldDescriptorProto> inputFields = fieldMap(messageTypeMap, inputTypeName);
         String outputType = method.getOutputType();
-        String outputName = getTypeName(outputType, packageName);
-        Map<String, DescriptorProtos.FieldDescriptorProto> outputFields = fieldMap(messageTypeMap,
-                getTypeName(outputType, packageName));
+        String inJava = resolveJavaFqn(typeIndex, inputType);
+        String outJava = resolveJavaFqn(typeIndex, outputType);
         RPCService.RPCCall.RPCCallBuilder callBuilder = new RPCService.RPCCall.RPCCallBuilder()
                 .rpcCallName(methodName)
-                .inputName(inputTypeName)
-                .outputName(outputName)
-                .addInputParam(inputFields)
-                .addOutputParam(outputFields);
+                .inputName(inJava)
+                .outputName(outJava);
+        DescriptorProto outputFields = findOutputMessage(method,
+                allMessages);
+        if (outputFields != null) {
+            callBuilder.addOutputParam(fieldMap(outputFields));
+        }
+
         RPCService.RPCCall rcpCall = callBuilder.build();
         rcpMap.put(methodName, rcpCall);
+    }
+
+    private static Map<String, FieldDescriptorProto> fieldMap(DescriptorProto outputType) {
+        Map<String, FieldDescriptorProto> inputFields = new HashMap<>();
+        List<FieldDescriptorProto> fieldList = outputType.getFieldList();
+        if (!fieldList.isEmpty()) {
+            for (FieldDescriptorProto field : fieldList) {
+                inputFields.put(field.getName(), field);
+            }
+        }
+        return inputFields;
     }
 
     private static void updateConnectorMetaInfo(VelocityContext context, String serviceName, String resolvedConnectorName) {
@@ -210,23 +308,26 @@ public class GRPCConnectorGenerator {
         context.put(SERVICE_NAME, serviceName);
     }
 
-    private static Map<String, DescriptorProtos.FieldDescriptorProto> fieldMap(Map<String, DescriptorProtos.DescriptorProto> messageTypeMap, String result) {
-        Map<String, DescriptorProtos.FieldDescriptorProto> inputFields = new HashMap<>();
-        DescriptorProtos.DescriptorProto descriptorProto = messageTypeMap.get(result);
-        List<DescriptorProtos.FieldDescriptorProto> fieldList = descriptorProto.getFieldList();
-        if (!fieldList.isEmpty()) {
-            for (DescriptorProtos.FieldDescriptorProto field : fieldList) {
-                inputFields.put(field.getName(), field);
-            }
-        }
-        return inputFields;
-    }
-
     private static void initVelocityEngine() {
         Properties properties = new Properties();
         properties.setProperty("resource.loader", "class");
         properties.setProperty("class.resource.loader.class",
                 "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         velocityEngine.init(properties);
+    }
+
+    static DescriptorProto findOutputMessage(
+            MethodDescriptorProto method,
+            Map<String, DescriptorProto> allMessages) {
+
+        // e.g. ".example.common.Response"
+        String outputType = method.getOutputType();
+
+        // remove leading dot if present
+        if (outputType.startsWith(".")) {
+            outputType = outputType.substring(1);
+        }
+
+        return allMessages.get(outputType);
     }
 }

@@ -37,7 +37,7 @@ import static org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenera
  */
 public class ConnectorFactory {
     private static final Log LOG = LogFactory.getLog(ConnectorFactory.class);
-    public static void main(String[] args) throws ConnectorGenException {
+    public static void main(String[] args) {
         if (args.length < 3 || args.length > 4) {
             throw new IllegalArgumentException("Usage: <idl_file> <outputpath> [miVersion]");
         }
@@ -55,7 +55,7 @@ public class ConnectorFactory {
                 LOG.error("Please provide a valid Protocol Buffer (.proto) or OpenAPI file (.yaml/.json).");
             }
         } catch (org.wso2.mi.tool.connector.tools.generator.grpc.exception.ConnectorGenException e) {
-            throw new ConnectorGenException(e.getMessage());
+            LOG.error(e.getMessage());
         }
     }
 }
