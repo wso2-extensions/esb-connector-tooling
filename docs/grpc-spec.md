@@ -109,6 +109,12 @@ Below java code option can be supported,
 
 ## 4. Notes & Limitations
 **Note:**
-- Not supported for the deadline option  
+- The deadline option is not supported
 - Stream types are not supported
 - Multiple services with one proto file are not supported
+- Internal/External Imports Support:
+  - **Internal imports** (proto files referenced from within the same project structure) are fully supported.
+  These files must be placed relative to the `main.proto` file, following the standard protoc directory-based resolution behavior. 
+  - **External imports** (proto files coming from external libraries or dependencies):
+    - Well-known types under `google/protobuf/*.proto` are automatically supported. 
+    - Other external imports, such as `google/type/*.proto`, must be manually provided within the project so that protoc can resolve them during Java code generation.
