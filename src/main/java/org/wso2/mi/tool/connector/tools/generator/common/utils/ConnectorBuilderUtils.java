@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
@@ -25,6 +26,10 @@ public class ConnectorBuilderUtils {
 
     private static final Log log = LogFactory.getLog(ConnectorBuilderUtils.class);
     private static final Invoker invoker = new DefaultInvoker();;
+
+    private static final int JDK_25_VERSION = 25;
+    private static final String DEFAULT_SYNAPSE_VERSION = "4.0.0-wso2v165";
+    private static final String JDK25_SYNAPSE_VERSION = "4.1.0-wso2v50";
 
     /**
      * Builds the connector using Maven.
@@ -50,7 +55,20 @@ public class ConnectorBuilderUtils {
                 String mavenHome = getMavenHome();
                 invoker.setMavenHome(new File(mavenHome));
             }
-            invoker.execute(request);
+
+            // Log the output and error streams of the Maven build process
+            request.setOutputHandler(line -> log.info("[maven] " + line));
+            request.setErrorHandler(line -> log.error("[maven] " + line));
+            
+            InvocationResult result = invoker.execute(request); 
+            if (result.getExitCode() != 0) {
+                if (result.getExecutionException() != null) {
+                    log.error("Maven execution failed: " + result.getExecutionException().getMessage());
+                } else {
+                    log.error("Maven build failed with exit code: " + result.getExitCode());
+                }
+                return null;
+            }
         } catch (Exception e) {
             log.error("Error occurred while building the connector.", e);
             return null;
@@ -69,6 +87,41 @@ public class ConnectorBuilderUtils {
         }
         log.error("Connector not found in the target directory.");
         return null;
+    }
+
+    /**
+     * Determines the major version of the JDK used for the build.
+     *
+     * @return The JDK major version (e.g. 8, 11, 25), or -1 if it cannot be determined.
+     */
+    public static int getJavaMajorVersion() {
+        String version = System.getProperty("java.version");
+        if (version == null) {
+            return -1;
+        }
+        // Pre-JDK 9 versions are reported as "1.x.y_z"
+        if (version.startsWith("1.")) {
+            version = version.substring(2);
+        }
+        // Take the leading digit run so any separator (".", "-", "+", "_") ends the major version
+        int end = 0;
+        while (end < version.length() && Character.isDigit(version.charAt(end))) {
+            end++;
+        }
+        if (end == 0) {
+            log.warn("Could not parse Java version: " + version);
+            return -1;
+        }
+        return Integer.parseInt(version.substring(0, end));
+    }
+
+    /**
+     * Resolves the synapse version to use in the generated pom based on the JDK used for the build.
+     *
+     * @return The synapse version.
+     */
+    public static String getSynapseVersion() {
+        return getJavaMajorVersion() >= JDK_25_VERSION ? JDK25_SYNAPSE_VERSION : DEFAULT_SYNAPSE_VERSION;
     }
 
     /**
