@@ -37,6 +37,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.wso2.mi.tool.connector.tools.generator.common.utils.ConnectorBuilderUtils;
 import org.wso2.mi.tool.connector.tools.generator.openapi.ConnectorGenException;
 import org.wso2.mi.tool.connector.tools.generator.openapi.Constants;
 import org.wso2.mi.tool.connector.tools.generator.openapi.model.Operation;
@@ -667,6 +668,7 @@ public class ProjectGeneratorUtils {
         context.put("version", "1.0.0");
         context.put("groupId", "org.wso2.mi.connector");
         context.put("connectorName", resolvedConnectorName);
+        context.put("synapseVersion", ConnectorBuilderUtils.getSynapseVersion());
         return context;
     }
     private static String makePackageNameCompatible(String name) {

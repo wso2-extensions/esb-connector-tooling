@@ -19,7 +19,12 @@
 package org.wso2.mi.tool.connector.tools.generator.grpc;
 
 import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.DescriptorProtos.DescriptorProto;
+import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
+import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
 import com.google.protobuf.DescriptorProtos.FileDescriptorSet;
+import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
+import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.ProtocolStringList;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -263,6 +268,7 @@ public class GRPCConnectorGenerator {
             }
             break;
         }
+        context.put("synapseVersion", ConnectorBuilderUtils.getSynapseVersion());
         return context;
     }
 
